@@ -1,0 +1,10 @@
+# Optional local models. Built-in models do not need an entry here.
+# Registering a model imports local Python. Point this only at code you trust.
+#
+# models:
+#   - id: my-classifier
+#     name: My classifier
+#     qualified_name: my_package.model:MyClassifier
+#     description: "What this model predicts and which data it was trained on."
+#     params: {}
+models: []

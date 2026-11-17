@@ -1,0 +1,154 @@
+:root {
+  --ink: #1c2430;
+  --muted: #5c6675;
+  --paper: #f3efe6;
+  --card: #fffdf8;
+  --line: #d9d0c3;
+  --header: #1c2430;
+  --sim: #0f5f5c;
+  --sim-bg: #e5f3f2;
+  --real: #8a4518;
+  --real-bg: #f8ece3;
+  --accent: #234e9b;
+  --good: #1d6b3a;
+  --bad: #8c2f39;
+  --shadow: 0 1px 0 rgba(28, 36, 48, 0.04);
+  color: var(--ink);
+  background: var(--paper);
+  font-family: "Segoe UI", Candara, sans-serif;
+  line-height: 1.45;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+.site-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  align-items: end;
+  padding: 1.4rem 1.6rem 1.1rem;
+  background: var(--header);
+  color: #f7f3ea;
+}
+
+.eyebrow, .tagline { margin: 0; }
+.eyebrow {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  color: #d7c4a3;
+}
+.site-header h1 {
+  margin: 0.15rem 0;
+  font-size: 2rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+.tagline { color: #d5dbe3; max-width: 36rem; }
+
+.nav { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.nav button, button, .button-link {
+  border: 1px solid transparent;
+  background: #fffdf8;
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+.nav button[aria-current="page"] {
+  background: #e7c99a;
+  color: #1c2430;
+}
+button.primary { background: var(--accent); color: white; }
+button.danger { background: transparent; color: var(--bad); border-color: #e3c5c8; }
+button:disabled { opacity: 0.55; cursor: wait; }
+
+.banner, .flash {
+  margin: 0;
+  padding: 0.7rem 1.6rem;
+}
+.banner { background: #efe2c6; color: #4a3414; }
+.flash:empty { display: none; }
+.flash.info { background: #e7eef8; }
+.flash.error { background: #f8e6e8; color: var(--bad); }
+.flash.ok { background: #e5f3ea; color: var(--good); }
+
+main { padding: 1.2rem 1.6rem 2.5rem; max-width: 1100px; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.8rem; }
+.card, .panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  box-shadow: var(--shadow);
+}
+.card h2, .panel h2, .panel h3 { margin: 0 0 0.4rem; }
+.stat { font-size: 1.8rem; font-weight: 650; letter-spacing: -0.03em; }
+.muted { color: var(--muted); }
+.stack { display: grid; gap: 0.9rem; }
+.split { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 1rem; }
+.form-grid { display: grid; gap: 0.7rem; }
+label { display: grid; gap: 0.25rem; font-size: 0.92rem; }
+input, select, textarea {
+  font: inherit;
+  color: inherit;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.45rem 0.55rem;
+}
+textarea { min-height: 4.5rem; resize: vertical; }
+.row-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+th, td { text-align: left; padding: 0.45rem 0.4rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+tr.clickable { cursor: pointer; }
+tr.clickable:hover { background: #f7f1e6; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+.badge.simulated { background: var(--sim-bg); color: var(--sim); }
+.badge.real { background: var(--real-bg); color: var(--real); }
+.badge.example { background: #efe2c6; color: #6a4b16; }
+.badge.completed { background: #e5f3ea; color: var(--good); }
+.badge.failed { background: #f8e6e8; color: var(--bad); }
+.badge.running, .badge.queued { background: #e7eef8; color: var(--accent); }
+
+.gap-better { color: var(--good); font-weight: 650; }
+.gap-worse { color: var(--bad); font-weight: 650; }
+.caveat {
+  border-left: 4px solid #b5812f;
+  background: #fff8ec;
+  padding: 0.7rem 0.9rem;
+}
+.matrix { overflow-x: auto; }
+.matrix td, .matrix th { text-align: right; }
+.matrix td.label, .matrix th.label { text-align: left; }
+.site-footer {
+  padding: 0 1.6rem 2rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.site-footer p { margin: 0.15rem 0; }
+
+@media (max-width: 800px) {
+  .site-header, .split { display: block; }
+  .nav { margin-top: 0.8rem; }
+  main, .banner, .flash { padding-left: 1rem; padding-right: 1rem; }
+}

@@ -1,0 +1,7 @@
+# Example evaluation configuration for AcoustiBench.
+# Copy this file and edit it. Nothing here is a completed experiment.
+sample_rate: 16000
+split: all
+max_items: null
+max_seconds: 30
+notes: "Example configuration. Replace this note with the question the run should answer."

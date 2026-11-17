@@ -1,0 +1,8 @@
+# Template for registering a dataset. This path is an example and is not created.
+# Edit root_path, then run:
+#   acousticbench datasets add --file config/example_dataset.yaml
+name: "Replace with a dataset name"
+domain: real
+layout: class_folders
+root_path: "C:/path/to/wavs"
+description: "Replace with where the audio came from and how the labels were assigned."

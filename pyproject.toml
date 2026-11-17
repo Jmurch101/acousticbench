@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "acousticbench"
+version = "0.1.0"
+description = "Sim-to-real evaluation harness for acoustic inference models"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+  {name = "Jonathankeith Murchison"},
+  {name = "Javon Whitfield"},
+  {name = "Jonathan Price"},
+]
+dependencies = [
+  "numpy>=1.26",
+  "PyYAML>=6.0",
+  "fastapi>=0.115",
+  "uvicorn>=0.32",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+acousticbench = "acousticbench.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"acousticbench.web" = ["static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
