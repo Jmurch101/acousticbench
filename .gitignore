@@ -16,5 +16,7 @@ data/runs/
 data/*.db
 data/*.db-*
 data/examples/
+data/ace/
+data/simulated/
 .DS_Store
 Thumbs.db

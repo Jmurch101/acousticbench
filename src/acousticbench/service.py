@@ -171,14 +171,14 @@ def queue_run(
         raise
     params = config.pop("model_params")
     notes = config.pop("notes")
-    instantiate(spec, params)
+    model = instantiate(spec, params)
     metadata = dataset.get("metadata") or {}
+    config["task"] = getattr(model, "task", "classification")
     config["dataset_flags"] = {
         "is_example": dataset["is_example"],
         "synthetic_stand_in": dataset["synthetic_stand_in"],
         "synthetic": bool(metadata.get("synthetic")),
     }
-    config["task"] = "classification"
     return store.create_run(
         {
             "model_id": spec.model_id,

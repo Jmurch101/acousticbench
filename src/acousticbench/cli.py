@@ -42,6 +42,18 @@ def main(argv: list[str] | None = None) -> None:
     generate = sub.add_parser("generate-examples", help="Write labeled synthetic example datasets.")
     generate.set_defaults(func=cmd_generate)
 
+    simulate = sub.add_parser(
+        "simulate-dev",
+        help="Write the Pyroomacoustics shoebox set with Sabine T60 labels.",
+    )
+    simulate.set_defaults(func=cmd_simulate)
+
+    prepare_ace = sub.add_parser(
+        "prepare-ace",
+        help="Register the local ACE single-channel impulse responses and published T60 labels.",
+    )
+    prepare_ace.set_defaults(func=cmd_prepare_ace)
+
     datasets = sub.add_parser("datasets", help="List or register datasets.")
     datasets_sub = datasets.add_subparsers(dest="datasets_command", required=True)
     datasets_list = datasets_sub.add_parser("list", help="List registered datasets.")
@@ -113,6 +125,23 @@ def cmd_generate(args: argparse.Namespace) -> None:
     print("Generated example datasets. These are synthetic and are not experimental results.")
     for record in records:
         print(f"- {record['id']}: {record['domain']} -> {record['root_path']}")
+
+
+def cmd_simulate(args: argparse.Namespace) -> None:
+    from acousticbench.sim.pyroom_dev import generate_pyroom_dataset
+
+    record = generate_pyroom_dataset(_root(args), _store(_root(args)))
+    print("Wrote the Pyroomacoustics development set. The t60 column is Sabine, not a measurement.")
+    print(f"- {record['id']}: {record['domain']} -> {record['root_path']}")
+
+
+def cmd_prepare_ace(args: argparse.Namespace) -> None:
+    from acousticbench.ace_prepare import prepare_ace_dataset
+
+    record = prepare_ace_dataset(_root(args), _store(_root(args)))
+    print("Registered the local ACE impulse responses. Audio stays outside git.")
+    print(f"- {record['id']}: {record['domain']} -> {record['root_path']}")
+    print("Cite Eaton, Gaubitch, Moore, and Naylor, IEEE/ACM TASLP, 2016.")
 
 
 def cmd_datasets_list(args: argparse.Namespace) -> None:

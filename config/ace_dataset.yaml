@@ -1,0 +1,16 @@
+# Template for a local copy of the ACE Challenge corpus.
+# Do not commit the audio. The corpus is CC BY-ND 4.0.
+# Download from https://zenodo.org/records/6257551 or the Imperial College ACE page.
+# Cite Eaton, Gaubitch, Moore, and Naylor, IEEE/ACM TASLP, 2016.
+#
+# After download, build manifest.csv with one row per impulse response:
+#   path,t60,split,condition
+#   AIR/Office_1.wav,0.34,dev,office
+#
+# Point root_path at that folder, then:
+#   acousticbench datasets add --file config/ace_dataset.yaml
+name: "ACE Challenge measured rooms"
+domain: real
+layout: csv
+root_path: "C:/data/ace-challenge"
+description: "Real measured acoustic impulse responses and ground-truth T60 from the ACE Challenge corpus. CC BY-ND 4.0. Cite Eaton et al. 2016. Audio is not stored in this repository."

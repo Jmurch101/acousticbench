@@ -36,8 +36,8 @@ def test_gap_is_real_minus_simulated():
         _run("real", "real", 0.6, 0.5, 20),
     )
     accuracy = next(item for item in comparison["metrics"] if item["key"] == "accuracy")
-    assert accuracy["gap"] == -0.3
-    assert comparison["per_class_f1"][0]["gap"] == -0.3
+    assert abs(accuracy["gap"] - -0.3) < 1e-9
+    assert abs(comparison["per_class_f1"][0]["gap"] - -0.3) < 1e-9
     assert comparison["gap_definition"] == "gap = real - simulated"
 
 

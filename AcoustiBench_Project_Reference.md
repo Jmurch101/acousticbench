@@ -139,18 +139,23 @@ For the related-work and report sections:
 - Record the source and version of datasets, models, and tools.
 - Do not claim an accuracy level or sim-to-real improvement until it has been measured and supported by actual runs.
 No bibliography or specific papers for AcoustiBench were included in the supplied project details. Add verified sources as the team selects the task, data, and methods.
-13. Open questions to resolve with the team/advisor
-1. What exact acoustic inference task will AcoustiBench evaluate?
-2. What simulated data source or simulator will be used?
-3. What real-world recordings or dataset will be used, and what permissions apply?
-4. Which models will be integrated first?
-5. What labels or reference targets are available?
-6. Which metrics best measure the selected task and sim-to-real gap?
-7. What is the minimum successful demonstration for the senior design review?
-8. What user interface is expected: CLI, desktop, web, or notebook-based?
-9. What are the confirmed software, hardware, and data-storage requirements?
-10. What are the current member assignments and remaining milestone dates?
-11. What are the complete final-report and presentation requirements?
+13. Decisions and remaining questions
+The proposal and midterm report name the required tasks, Pyroomacoustics, the ACE Challenge, and sponsor-supplied models. The working choices are recorded in DECISIONS.md.
+
+Selected for implementation:
+1. First task: T60 estimation. Room-size classification, distance estimation, and sound-event detection remain required.
+2. Simulator the team can run: Pyroomacoustics (MIT). SoundSpaces 2.0, Steam Audio, and UE5 MetaSounds stay with the sponsor.
+3. Real recordings: ACE Challenge corpus, CC BY-ND 4.0. Do not commit or modify-and-redistribute the audio.
+4. First model: Schroeder T60 baseline. The second model is still a sponsor baseline and is not in the repository.
+5. T60 metrics: mean absolute error and root mean squared error, including a by-condition breakdown when the manifest has a condition column.
+
+Still needs the advisor or sponsor:
+6. Approval of the three-dataset list.
+7. The two sponsor baseline models.
+8. Whether the minimum demonstration is the current command-line and local web page.
+9. Confirmation of the midterm software list, including Docker, React, and GitHub Actions.
+10. Member assignments for the remaining milestones, and the milestone dates after week 10.
+11. The complete final-report and presentation requirements.
 14. Guidance for an AI coding agent
 When using an AI coding agent to implement AcoustiBench:
 - Ask it to inspect the repository and project documents before changing files.
@@ -163,4 +168,6 @@ When using an AI coding agent to implement AcoustiBench:
 15. Project status snapshot
 Known: project title, broad sim-to-real evaluation purpose, team name, team members, advisor, proposal submission date, proposal and midterm report guidelines, and an early milestone outline.
 
-Needs confirmation: specific task, datasets, models, metrics, architecture, software/hardware stack, member assignments, later milestones, actual implementation status, and complete final-report requirements.
+Working selection, still needing sponsor approval for the dataset list and the second model: T60 estimation, Pyroomacoustics, the ACE corpus, and the Schroeder T60 baseline. See DECISIONS.md.
+
+Needs confirmation: sponsor dataset approval, sponsor baseline models, distance and sound-event implementations, Docker, React, GitHub Actions, member assignments, later milestone dates, and complete final-report requirements.

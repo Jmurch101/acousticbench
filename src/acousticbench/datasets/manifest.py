@@ -25,6 +25,8 @@ class AudioItem:
     split: str | None
     domain: str | None
     relpath: str
+    target: float | None = None
+    condition: str | None = None
 
 
 def load_items(root: Path, layout: str) -> list[AudioItem]:
@@ -94,13 +96,19 @@ def _from_csv(root: Path) -> list[AudioItem]:
         fields = {(name or "").strip().lower(): name for name in reader.fieldnames}
         path_key = _pick(fields, "path", "filepath", "file")
         label_key = _pick(fields, "label", "class", "category")
-        if path_key is None or label_key is None:
-            raise ValueError(f"{manifest} needs path and label columns.")
+        target_key = _pick(fields, "t60", "target", "reference", "distance")
+        if path_key is None or (label_key is None and target_key is None):
+            raise ValueError(f"{manifest} needs a path column and a label or t60/target column.")
         split_key = _pick(fields, "split")
         domain_key = _pick(fields, "domain")
+        condition_key = _pick(fields, "condition", "room", "room_type")
         for row in reader:
             raw_path = (row.get(path_key) or "").strip()
-            label = (row.get(label_key) or "").strip()
+            label = (row.get(label_key) or "").strip() if label_key else ""
+            raw_target = (row.get(target_key) or "").strip() if target_key else ""
+            target = _parse_float(raw_target)
+            if not label and target is not None:
+                label = f"{target:.6f}"
             if not raw_path or not label:
                 continue
             path = Path(raw_path)
@@ -108,6 +116,7 @@ def _from_csv(root: Path) -> list[AudioItem]:
                 path = root / path
             split = (row.get(split_key) or "").strip() if split_key else ""
             domain = (row.get(domain_key) or "").strip() if domain_key else ""
+            condition = (row.get(condition_key) or "").strip() if condition_key else ""
             resolved = path.resolve()
             try:
                 relpath = resolved.relative_to(root).as_posix()
@@ -120,9 +129,20 @@ def _from_csv(root: Path) -> list[AudioItem]:
                     split=split or None,
                     domain=domain or None,
                     relpath=relpath,
+                    target=target,
+                    condition=condition or None,
                 )
             )
     return items
+
+
+def _parse_float(value: str) -> float | None:
+    if not value:
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
 
 
 def _pick(fields: dict[str, str], *names: str) -> str | None:

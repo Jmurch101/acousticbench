@@ -13,12 +13,14 @@ import yaml
 from acousticbench.models.base import AcousticModel
 from acousticbench.models.constant import ConstantLabelModel
 from acousticbench.models.example_spectral import ExampleSpectralClassifier
+from acousticbench.models.schroeder_t60 import SchroederT60Model
 
 logger = logging.getLogger(__name__)
 
 QUALIFIED_NAME = re.compile(r"^[A-Za-z_][\w.]*:[A-Za-z_]\w*$")
 
 BUILTINS: dict[str, type[AcousticModel]] = {
+    SchroederT60Model.model_id: SchroederT60Model,
     ExampleSpectralClassifier.model_id: ExampleSpectralClassifier,
     ConstantLabelModel.model_id: ConstantLabelModel,
 }

@@ -138,6 +138,60 @@ def _expected_calibration_error(
     return float(ece), total
 
 
+def regression_metrics(
+    y_true: list[float],
+    y_pred: list[float],
+    latencies_ms: list[float] | None = None,
+    conditions: list[str | None] | None = None,
+    task: str = "regression",
+    unit: str = "",
+) -> dict:
+    """MAE and RMSE for T60 and distance estimation, as named in the proposal."""
+    if len(y_true) != len(y_pred):
+        raise ValueError("Targets and predictions must have the same length.")
+    if not y_true:
+        raise ValueError("At least one evaluated item is required.")
+    truth = np.asarray(y_true, dtype=np.float64)
+    pred = np.asarray(y_pred, dtype=np.float64)
+    error = pred - truth
+    latency = _latency_summary(latencies_ms or [])
+    summary = {
+        "task": task,
+        "unit": unit,
+        "n_evaluated": int(truth.size),
+        "mae": float(np.mean(np.abs(error))),
+        "rmse": float(np.sqrt(np.mean(error**2))),
+        "median_ae": float(np.median(np.abs(error))),
+        "mean_latency_ms": latency["mean"],
+        "p50_latency_ms": latency["p50"],
+        "p95_latency_ms": latency["p95"],
+        "by_condition": _condition_errors(conditions, truth, pred),
+    }
+    return summary
+
+
+def _condition_errors(
+    conditions: list[str | None] | None, truth: np.ndarray, pred: np.ndarray
+) -> dict[str, dict[str, float | int]]:
+    if not conditions:
+        return {}
+    grouped: dict[str, list[int]] = {}
+    for index, condition in enumerate(conditions):
+        if not condition:
+            continue
+        grouped.setdefault(condition, []).append(index)
+    summary: dict[str, dict[str, float | int]] = {}
+    for condition, indexes in sorted(grouped.items()):
+        chosen = np.asarray(indexes)
+        error = pred[chosen] - truth[chosen]
+        summary[condition] = {
+            "n": int(chosen.size),
+            "mae": float(np.mean(np.abs(error))),
+            "rmse": float(np.sqrt(np.mean(error**2))),
+        }
+    return summary
+
+
 def _latency_summary(latencies_ms: list[float]) -> dict[str, float | None]:
     if not latencies_ms:
         return {"mean": None, "p50": None, "p95": None}

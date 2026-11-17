@@ -9,7 +9,8 @@ from pathlib import Path
 
 from acousticbench.audio import load_wav, resample_linear
 from acousticbench.eval.store import Store
-from acousticbench.metrics import classification_metrics
+from acousticbench.metrics import classification_metrics, regression_metrics
+from acousticbench.provenance import collect_provenance
 from acousticbench.models.base import Prediction
 from acousticbench.models.registry import get_model, instantiate
 from acousticbench.paths import runs_dir
@@ -46,10 +47,13 @@ def _evaluate(store: Store, run: dict, project_root: Path) -> tuple[dict, Path]:
     registered = store.list_registered_models()
     spec = get_model(project_root, run["model_id"], registered)
     model = instantiate(spec, run.get("model_params") or {})
-    if getattr(model, "task", "classification") != "classification":
+    if hasattr(model, "load"):
+        model.load()
+    task = getattr(model, "task", "classification")
+    if task not in {"classification", "t60", "distance"}:
         raise RuntimeError(
-            f"Model '{spec.model_id}' declares task '{model.task}'. "
-            "This version evaluates closed-set classification only."
+            f"Model '{spec.model_id}' declares task '{task}'. "
+            "Supported tasks are classification, t60, and distance."
         )
 
     config = run.get("config") or {}
@@ -58,6 +62,9 @@ def _evaluate(store: Store, run: dict, project_root: Path) -> tuple[dict, Path]:
     rows: list[dict] = []
     y_true: list[str] = []
     y_pred: list[str] = []
+    true_values: list[float] = []
+    pred_values: list[float] = []
+    conditions: list[str | None] = []
     confidences: list[float | None] = []
     latencies: list[float] = []
     domain_mismatch = False
@@ -67,6 +74,9 @@ def _evaluate(store: Store, run: dict, project_root: Path) -> tuple[dict, Path]:
             "path": item.relpath,
             "true_label": item.label,
             "pred_label": "",
+            "true_value": "" if item.target is None else f"{item.target:.6f}",
+            "pred_value": "",
+            "condition": item.condition or "",
             "confidence": "",
             "latency_ms": "",
             "sample_rate": "",
@@ -84,7 +94,8 @@ def _evaluate(store: Store, run: dict, project_root: Path) -> tuple[dict, Path]:
             started = time.perf_counter()
             prediction = model.predict(audio, target_rate)
             latency_ms = (time.perf_counter() - started) * 1000.0
-            parsed = _parse_prediction(prediction)
+            parsed = _parse_prediction(prediction, task)
+            true_target = _true_target(item) if task != "classification" else None
         except Exception as exc:
             row["error"] = str(exc)
             rows.append(row)
@@ -93,19 +104,33 @@ def _evaluate(store: Store, run: dict, project_root: Path) -> tuple[dict, Path]:
         row["confidence"] = "" if parsed["confidence"] is None else f"{parsed['confidence']:.6f}"
         row["latency_ms"] = f"{latency_ms:.3f}"
         row["sample_rate"] = str(sample_rate)
+        if parsed["value"] is not None:
+            row["pred_value"] = f"{parsed['value']:.6f}"
         rows.append(row)
         y_true.append(item.label)
         y_pred.append(parsed["label"])
         confidences.append(parsed["confidence"])
         latencies.append(latency_ms)
+        conditions.append(item.condition)
+        if task != "classification":
+            true_values.append(float(true_target))
+            pred_values.append(float(parsed["value"]))
 
-    if not y_true:
+    if task == "classification" and not y_true:
+        first_error = next((row["error"] for row in rows if row["error"]), "unknown error")
+        raise RuntimeError(f"No audio items could be evaluated. First error: {first_error}")
+    if task != "classification" and not true_values:
         first_error = next((row["error"] for row in rows if row["error"]), "unknown error")
         raise RuntimeError(f"No audio items could be evaluated. First error: {first_error}")
 
-    metrics = classification_metrics(y_true, y_pred, confidences, latencies)
+    if task == "classification":
+        metrics = classification_metrics(y_true, y_pred, confidences, latencies)
+    else:
+        unit = "seconds" if task == "t60" else "meters"
+        metrics = regression_metrics(true_values, pred_values, latencies, conditions, task=task, unit=unit)
     metrics["n_items"] = len(items)
-    metrics["n_errors"] = len(items) - len(y_true)
+    evaluated = len(y_true) if task == "classification" else len(true_values)
+    metrics["n_errors"] = len(items) - evaluated
     if domain_mismatch:
         metrics["warnings"] = [
             "Some files declare a domain that differs from the dataset domain. "
@@ -113,9 +138,13 @@ def _evaluate(store: Store, run: dict, project_root: Path) -> tuple[dict, Path]:
         ]
     else:
         metrics["warnings"] = []
-    score_note = _score_note(confidences)
-    if score_note:
-        metrics["warnings"].append(score_note)
+    if task == "classification":
+        score_note = _score_note(confidences)
+        if score_note:
+            metrics["warnings"].append(score_note)
+    info = model.get_info() if hasattr(model, "get_info") else {}
+    metrics["model_info"] = info
+    metrics["provenance"] = collect_provenance(project_root)
 
     destination = runs_dir(project_root) / run["id"]
     destination.mkdir(parents=True, exist_ok=True)
@@ -124,7 +153,18 @@ def _evaluate(store: Store, run: dict, project_root: Path) -> tuple[dict, Path]:
     return metrics, predictions_path
 
 
-def _parse_prediction(prediction: Prediction) -> dict:
+def _true_target(item) -> float:
+    if item.target is not None:
+        return float(item.target)
+    try:
+        return float(item.label)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            f"{item.relpath} has no numeric target. Add a t60 or target column to the manifest."
+        ) from exc
+
+
+def _parse_prediction(prediction: Prediction, task: str = "classification") -> dict:
     if not isinstance(prediction, Prediction):
         raise TypeError("Model.predict must return a Prediction.")
     label = str(prediction.label).strip()
@@ -140,7 +180,13 @@ def _parse_prediction(prediction: Prediction) -> dict:
         if abs(total - 1.0) > 0.05:
             prediction.extra = dict(prediction.extra or {})
             prediction.extra["scores_sum"] = total
-    return {"label": label, "confidence": confidence, "scores_sum_ok": True}
+    if task != "classification" and prediction.value is None:
+        raise ValueError("A T60 or distance model must set Prediction.value.")
+    return {
+        "label": label,
+        "confidence": confidence,
+        "value": None if prediction.value is None else float(prediction.value),
+    }
 
 
 def _score_note(confidences: list[float | None]) -> str | None:
@@ -156,7 +202,18 @@ def _score_note(confidences: list[float | None]) -> str | None:
 
 
 def _write_predictions(path: Path, rows: list[dict]) -> None:
-    fieldnames = ["path", "true_label", "pred_label", "confidence", "latency_ms", "sample_rate", "error"]
+    fieldnames = [
+        "path",
+        "true_label",
+        "pred_label",
+        "true_value",
+        "pred_value",
+        "condition",
+        "confidence",
+        "latency_ms",
+        "sample_rate",
+        "error",
+    ]
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()

@@ -71,7 +71,7 @@ def create_app(project_root: Path | None = None) -> FastAPI:
             "run_count": len(runs),
             "model_count": len(models),
             "example_caveat": EXAMPLE_CAVEAT,
-            "task": "closed-set classification",
+            "task": "T60 estimation is the first selected task. Classification is still available for room-size work.",
             "gap_definition": "gap = real - simulated",
         }
 

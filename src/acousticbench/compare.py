@@ -16,21 +16,32 @@ METRIC_SPECS = (
     ("mean_latency_ms", "Mean latency (ms)", "lower"),
 )
 
+REGRESSION_SPECS = (
+    ("mae", "Mean absolute error", "lower"),
+    ("rmse", "Root mean squared error", "lower"),
+    ("median_ae", "Median absolute error", "lower"),
+    ("mean_latency_ms", "Mean latency (ms)", "lower"),
+)
+
+REGRESSION_TASKS = {"t60", "distance", "regression"}
+
 
 def compare_runs(simulated: dict, real: dict) -> dict:
     if simulated.get("status") != "completed" or real.get("status") != "completed":
         raise ValueError("Both runs must be completed before they can be compared.")
     sim_summary = simulated.get("summary") or {}
     real_summary = real.get("summary") or {}
-    if sim_summary.get("task") not in {None, "classification"} or real_summary.get("task") not in {
-        None,
-        "classification",
-    }:
-        raise ValueError("Comparison currently supports classification runs.")
+    sim_task = sim_summary.get("task") or "classification"
+    real_task = real_summary.get("task") or "classification"
+    if sim_task != real_task:
+        raise ValueError(
+            f"Cannot compare task '{sim_task}' with task '{real_task}'. Use two runs of the same task."
+        )
+    specs = REGRESSION_SPECS if sim_task in REGRESSION_TASKS else METRIC_SPECS
 
     warnings = _warnings(simulated, real, sim_summary, real_summary)
     metrics = []
-    for key, label, better in METRIC_SPECS:
+    for key, label, better in specs:
         sim_value = sim_summary.get(key)
         real_value = real_summary.get(key)
         gap = None

@@ -25,33 +25,8 @@ def run_report_markdown(run: dict) -> str:
     if run.get("error"):
         lines.extend(["## Error", "", run["error"], ""])
     if summary:
-        lines.extend(
-            [
-                "## Metrics",
-                "",
-                f"- Items evaluated: {summary.get('n_evaluated')} of {summary.get('n_items')}",
-                f"- Load or inference errors: {summary.get('n_errors')}",
-                f"- Accuracy: {_num(summary.get('accuracy'))}",
-                f"- Macro F1: {_num(summary.get('macro_f1'))}",
-                f"- Weighted F1: {_num(summary.get('weighted_f1'))}",
-                f"- Macro precision: {_num(summary.get('macro_precision'))}",
-                f"- Macro recall: {_num(summary.get('macro_recall'))}",
-                f"- Mean latency: {_num(summary.get('mean_latency_ms'))} ms",
-                f"- Expected calibration error: {_num(summary.get('ece'))}",
-                "",
-                "## Per class",
-                "",
-                "| Class | Precision | Recall | F1 | Support |",
-                "| --- | ---: | ---: | ---: | ---: |",
-            ]
-        )
-        for label, stats in (summary.get("per_class") or {}).items():
-            lines.append(
-                f"| {label} | {_num(stats.get('precision'))} | {_num(stats.get('recall'))} | "
-                f"{_num(stats.get('f1'))} | {stats.get('support')} |"
-            )
-        lines.extend(["", "## Confusion matrix", "", _confusion_markdown(summary), ""])
-        lines.extend(_assumption_lines())
+        lines.extend(_metric_lines(summary))
+        lines.extend(_assumption_lines(summary.get("task")))
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -65,8 +40,7 @@ def compare_report_markdown(comparison: dict, simulated: dict, real: dict) -> st
         f"- Simulated run: `{simulated['id']}` / {simulated['dataset_name']} / {simulated['model_name']}",
         f"- Real run: `{real['id']}` / {real['dataset_name']} / {real['model_name']}",
         "",
-        "For accuracy and F1, a negative gap means the real run scored lower.",
-        "For calibration error and latency, a positive gap means the real run cost more.",
+        *_gap_intro(simulated),
         "",
     ]
     if comparison.get("warnings"):
@@ -86,21 +60,28 @@ def compare_report_markdown(comparison: dict, simulated: dict, real: dict) -> st
         lines.append(
             f"| {metric['label']} | {_num(metric['simulated'])} | {_num(metric['real'])} | {_num(metric['gap'])} |"
         )
-    lines.extend(
-        [
-            "",
-            "## Per-class F1",
-            "",
-            "| Class | Simulated F1 | Real F1 | Gap | Simulated support | Real support |",
-            "| --- | ---: | ---: | ---: | ---: | ---: |",
-        ]
-    )
-    for row in comparison["per_class_f1"]:
-        lines.append(
-            f"| {row['label']} | {_num(row['simulated_f1'])} | {_num(row['real_f1'])} | {_num(row['gap'])} | "
-            f"{row['simulated_support']} | {row['real_support']} |"
+    task = (simulated.get("summary") or {}).get("task") or "classification"
+    if task in {"t60", "distance", "regression"}:
+        lines.extend(_condition_compare_lines(simulated, real))
+        lines.extend(_t60_method_lines(simulated, real))
+    else:
+        lines.extend(
+            [
+                "",
+                "## Per-class F1",
+                "",
+                "| Class | Simulated F1 | Real F1 | Gap | Simulated support | Real support |",
+                "| --- | ---: | ---: | ---: | ---: | ---: |",
+            ]
         )
-    lines.extend(["", *_assumption_lines()])
+        for row in comparison["per_class_f1"]:
+            lines.append(
+                f"| {row['label']} | {_num(row['simulated_f1'])} | {_num(row['real_f1'])} | {_num(row['gap'])} | "
+                f"{row['simulated_support']} | {row['real_support']} |"
+            )
+    if lines and lines[-1] != "":
+        lines.append("")
+    lines.extend(_assumption_lines(task))
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -114,6 +95,77 @@ def compare_report_html(comparison: dict, simulated: dict, real: dict) -> str:
     return _page(f"{PROJECT_NAME} comparison", body)
 
 
+def _metric_lines(summary: dict) -> list[str]:
+    lines = [
+        "## Metrics",
+        "",
+        f"- Task: {summary.get('task') or 'classification'}",
+        f"- Items evaluated: {summary.get('n_evaluated')} of {summary.get('n_items')}",
+        f"- Load or inference errors: {summary.get('n_errors')}",
+        f"- Mean latency: {_num(summary.get('mean_latency_ms'))} ms",
+    ]
+    if summary.get("mae") is not None:
+        lines.extend(
+            [
+                f"- Unit: {summary.get('unit') or 'n/a'}",
+                f"- Mean absolute error: {_num(summary.get('mae'))}",
+                f"- Root mean squared error: {_num(summary.get('rmse'))}",
+                f"- Median absolute error: {_num(summary.get('median_ae'))}",
+            ]
+        )
+        conditions = summary.get("by_condition") or {}
+        if conditions:
+            lines.extend(
+                [
+                    "",
+                    "## By condition",
+                    "",
+                    "| Condition | MAE | RMSE | Support |",
+                    "| --- | ---: | ---: | ---: |",
+                ]
+            )
+            for name, stats in conditions.items():
+                lines.append(
+                    f"| {name} | {_num(stats.get('mae'))} | {_num(stats.get('rmse'))} | {stats.get('n')} |"
+                )
+    if summary.get("accuracy") is not None:
+        lines.extend(
+            [
+                f"- Accuracy: {_num(summary.get('accuracy'))}",
+                f"- Macro F1: {_num(summary.get('macro_f1'))}",
+                f"- Weighted F1: {_num(summary.get('weighted_f1'))}",
+                f"- Macro precision: {_num(summary.get('macro_precision'))}",
+                f"- Macro recall: {_num(summary.get('macro_recall'))}",
+                f"- Expected calibration error: {_num(summary.get('ece'))}",
+                "",
+                "## Per class",
+                "",
+                "| Class | Precision | Recall | F1 | Support |",
+                "| --- | ---: | ---: | ---: | ---: |",
+            ]
+        )
+        for label, stats in (summary.get("per_class") or {}).items():
+            lines.append(
+                f"| {label} | {_num(stats.get('precision'))} | {_num(stats.get('recall'))} | "
+                f"{_num(stats.get('f1'))} | {stats.get('support')} |"
+            )
+        lines.extend(["", "## Confusion matrix", "", _confusion_markdown(summary)])
+    provenance = summary.get("provenance") or {}
+    if provenance:
+        lines.extend(
+            [
+                "",
+                "## Provenance",
+                "",
+                f"- AcoustiBench: {provenance.get('acousticbench_version')}",
+                f"- Python: {provenance.get('python')}",
+                f"- Git revision: {provenance.get('git_revision') or 'unavailable'}",
+            ]
+        )
+    lines.append("")
+    return lines
+
+
 def _caveat_lines(run: dict) -> list[str]:
     flags = (run.get("config") or {}).get("dataset_flags") or {}
     if flags.get("is_example") or flags.get("synthetic") or flags.get("synthetic_stand_in"):
@@ -121,14 +173,76 @@ def _caveat_lines(run: dict) -> list[str]:
     return []
 
 
-def _assumption_lines() -> list[str]:
+def _gap_intro(simulated: dict) -> list[str]:
+    task = (simulated.get("summary") or {}).get("task") or "classification"
+    if task in {"t60", "distance", "regression"}:
+        return [
+            "For error and latency, a positive gap means the real run cost more.",
+        ]
+    return [
+        "For accuracy and F1, a negative gap means the real run scored lower.",
+        "For calibration error and latency, a positive gap means the real run cost more.",
+    ]
+
+
+def _condition_compare_lines(simulated: dict, real: dict) -> list[str]:
+    lines = [
+        "",
+        "## By condition",
+        "",
+        "Conditions are not paired across the two datasets. Each table is that run's own breakdown.",
+        "",
+    ]
+    lines.extend(_one_condition_table("Simulated", (simulated.get("summary") or {}).get("by_condition") or {}))
+    lines.extend(_one_condition_table("Real", (real.get("summary") or {}).get("by_condition") or {}))
+    return lines
+
+
+def _one_condition_table(title: str, conditions: dict) -> list[str]:
+    lines = [f"### {title}", ""]
+    if not conditions:
+        return lines + ["No condition column was recorded.", ""]
+    lines.extend(
+        [
+            "| Condition | MAE | RMSE | Support |",
+            "| --- | ---: | ---: | ---: |",
+        ]
+    )
+    for name, stats in conditions.items():
+        lines.append(
+            f"| {name} | {_num(stats.get('mae'))} | {_num(stats.get('rmse'))} | {stats.get('n')} |"
+        )
+    lines.append("")
+    return lines
+
+
+def _t60_method_lines(simulated: dict, real: dict) -> list[str]:
+    if simulated.get("model_id") != "schroeder-t60":
+        return []
+    return [
+        "## Method",
+        "",
+        "- Model: Schroeder backward integration (`schroeder-t60`). This is a classical baseline, not a sponsor neural model.",
+        "- Simulated reference: Sabine T60 from room volume, surface area, and absorption.",
+        "- Real reference: ACE Challenge fullband T60 for cruciform channel 1.",
+        f"- Simulated notes: {simulated.get('notes') or 'None'}",
+        f"- Real notes: {real.get('notes') or 'None'}",
+        "",
+    ]
+
+
+def _assumption_lines(task: str | None = None) -> list[str]:
+    if task in {"t60", "distance", "regression"}:
+        task_line = "- The task is numeric estimation. Error is the predicted value minus the reference value."
+    else:
+        task_line = "- The task assumed here is closed-set classification: one label per file."
     return [
         "## How to read this",
         "",
-        "- The task assumed here is closed-set classification: one label per file.",
+        task_line,
         "- Sim-to-real gap compares aggregate metrics. Files are not paired across domains.",
         "- A model confidence score is used for calibration only when the model provides one.",
-        "- Replace example datasets with the team's simulated and recorded audio before drawing conclusions.",
+        "- Scores from a run marked as example data are not study results.",
         "",
     ]
 
