@@ -58,13 +58,14 @@ def prepare_ace_dataset(project_root: Path, store: Store) -> dict:
     prepared.mkdir(parents=True, exist_ok=True)
     manifest = prepared / "manifest.csv"
     with manifest.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=["path", "t60", "condition", "split"])
+        writer = csv.DictWriter(handle, fieldnames=["path", "t60", "label", "condition", "split"])
         writer.writeheader()
         for path, label in matched:
             writer.writerow(
                 {
                     "path": path.resolve().as_posix(),
                     "t60": f"{label['t60']:.6f}",
+                    "label": room_family(label["room_name"]),
                     "condition": label["room_name"],
                     "split": "corpus",
                 }
@@ -91,6 +92,8 @@ def prepare_ace_dataset(project_root: Path, store: Store) -> dict:
             "description": (
                 "Measured ACE Challenge impulse responses from the single-channel archive. "
                 "Targets are published fullband T60 values for cruciform channel 1. "
+                "The label column is the room family derived from the published room name. "
+                "The mean table does not include source-to-microphone distance in meters. "
                 "Cite Eaton et al. 2016. Audio is local only and is not part of the git repository."
             ),
             "metadata": {
@@ -99,9 +102,26 @@ def prepare_ace_dataset(project_root: Path, store: Store) -> dict:
                 "license_note": "Zenodo lists CC BY 4.0. Imperial College states CC BY-ND 4.0.",
                 "microphone": "single, cruciform channel 1",
                 "target": "fullband T60 seconds",
+                "t60_table": MEAN_TABLE,
+                "room_label": "family from Room decode: office, meeting, lecture, lobby",
+                "distance_reference": "not in the ACE mean table",
             },
         },
+        allow_example_flags=True,
     )
+
+
+def room_family(room_name: str) -> str:
+    name = room_name.lower()
+    if "office" in name:
+        return "office"
+    if "meeting" in name:
+        return "meeting"
+    if "lecture" in name:
+        return "lecture"
+    if "lobby" in name:
+        return "lobby"
+    return room_name
 
 
 def load_crucif_channel1_t60(path: Path) -> list[dict]:

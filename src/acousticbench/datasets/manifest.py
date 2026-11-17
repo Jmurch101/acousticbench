@@ -27,6 +27,8 @@ class AudioItem:
     relpath: str
     target: float | None = None
     condition: str | None = None
+    t60: float | None = None
+    distance: float | None = None
 
 
 def load_items(root: Path, layout: str) -> list[AudioItem]:
@@ -96,17 +98,22 @@ def _from_csv(root: Path) -> list[AudioItem]:
         fields = {(name or "").strip().lower(): name for name in reader.fieldnames}
         path_key = _pick(fields, "path", "filepath", "file")
         label_key = _pick(fields, "label", "class", "category")
-        target_key = _pick(fields, "t60", "target", "reference", "distance")
-        if path_key is None or (label_key is None and target_key is None):
-            raise ValueError(f"{manifest} needs a path column and a label or t60/target column.")
+        t60_key = _pick(fields, "t60")
+        distance_key = _pick(fields, "distance")
+        target_key = _pick(fields, "target", "reference")
+        if path_key is None or all(key is None for key in (label_key, t60_key, distance_key, target_key)):
+            raise ValueError(f"{manifest} needs a path column and a label, t60, distance, or target column.")
         split_key = _pick(fields, "split")
         domain_key = _pick(fields, "domain")
         condition_key = _pick(fields, "condition", "room", "room_type")
         for row in reader:
             raw_path = (row.get(path_key) or "").strip()
             label = (row.get(label_key) or "").strip() if label_key else ""
-            raw_target = (row.get(target_key) or "").strip() if target_key else ""
-            target = _parse_float(raw_target)
+            t60 = _parse_float((row.get(t60_key) or "").strip() if t60_key else "")
+            distance = _parse_float((row.get(distance_key) or "").strip() if distance_key else "")
+            target = _parse_float((row.get(target_key) or "").strip() if target_key else "")
+            if target is None:
+                target = t60 if t60 is not None else distance
             if not label and target is not None:
                 label = f"{target:.6f}"
             if not raw_path or not label:
@@ -131,6 +138,8 @@ def _from_csv(root: Path) -> list[AudioItem]:
                     relpath=relpath,
                     target=target,
                     condition=condition or None,
+                    t60=t60,
+                    distance=distance,
                 )
             )
     return items

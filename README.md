@@ -32,7 +32,7 @@ This is an early workflow, version 0.1.0. It can:
 - Export Markdown, HTML, CSV, and JSON for a presentation or report.
 - Open a local web page for the same workflow.
 
-The first completed task is T60 estimation. `acousticbench simulate-dev` builds a small Pyroomacoustics set whose labels are Sabine T60. `acousticbench prepare-ace` registers the local ACE impulse responses. The measured comparison is [reports/schroeder-t60-pyroom-vs-ace.md](reports/schroeder-t60-pyroom-vs-ace.md). Classification remains available for room-size labels. Advisor approval is still required for the dataset list and the sponsor baseline models.
+The first completed task is T60 estimation. `acousticbench simulate-dev` builds a Pyroomacoustics set whose T60 labels are Sabine values and whose distance labels are straight-line source-to-microphone distances. `acousticbench prepare-ace` registers the local ACE impulse responses and a room-family label. `acousticbench demo` reruns Schroeder T60, the fixed room-family rule, and the direct-path distance baseline, then writes [reports/draft-final-report.md](reports/draft-final-report.md). Advisor approval is still required for the dataset list and the sponsor baseline models.
 
 ## Assumptions in this version
 
@@ -112,7 +112,7 @@ Create the simulated development set:
 acousticbench simulate-dev
 ```
 
-That writes six shoebox impulse responses to `data/simulated/pyroom-sabine-dev` and registers dataset `pyroom-sabine-dev`. The `t60` column is the Sabine value for that room's absorption. It is not the Schroeder estimate of the same file, so the error is a real measurement of the estimator against the geometric reference. Simulated wav files are gitignored.
+That writes 36 shoebox impulse responses to `data/simulated/pyroom-sabine-dev` and registers dataset `pyroom-sabine-dev`: 9 rooms and 4 microphone positions, in the families office, meeting, and lecture. The `t60` column is the Sabine value for that room's absorption. It is not the Schroeder estimate of the same file. The `distance` column is the straight-line source-to-microphone distance in meters. Simulated wav files are gitignored.
 
 For the ACE corpus, download `ACE_Corpus_RIRN_Single.tbz2` and `ACE_Corpus_Data.tbz2` from [Zenodo](https://doi.org/10.5281/zenodo.6257551) into `data/ace/downloads/`. Then:
 
@@ -123,9 +123,17 @@ acousticbench eval --model schroeder-t60 --dataset ace-single-rir --sample-rate 
 acousticbench compare --sim <simulated-run-id> --real <real-run-id> --out reports/schroeder-t60-pyroom-vs-ace.md
 ```
 
-`prepare-ace` extracts the archive locally, matches the 14 single-channel impulse responses to the published fullband T60 for cruciform channel 1, and registers dataset `ace-single-rir`. It does not copy audio into git. Cite Eaton, Gaubitch, Moore, and Naylor, IEEE/ACM TASLP, 2016. The Zenodo record lists CC BY 4.0 and the Imperial College page states CC BY-ND 4.0. Do not commit the audio, and do not distribute a modified copy.
+`prepare-ace` extracts the archive locally, matches the 14 single-channel impulse responses to the published fullband T60 for cruciform channel 1, and registers dataset `ace-single-rir`. The `label` column collapses the published room name to office, meeting, lecture, or lobby. It does not copy audio into git. Cite Eaton, Gaubitch, Moore, and Naylor, IEEE/ACM TASLP, 2016. The Zenodo record lists CC BY 4.0 and the Imperial College page states CC BY-ND 4.0. Do not commit the audio, and do not distribute a modified copy.
 
-The current comparison is [reports/schroeder-t60-pyroom-vs-ace.md](reports/schroeder-t60-pyroom-vs-ace.md). Rooms are not paired. The simulated set has six files, so that gap is a development result, not a final study claim. `config/ace_dataset.yaml` remains a template for a manual manifest if the audio lives somewhere else.
+After both datasets are registered, one command reruns the three development baselines and rewrites the reports from those runs:
+
+```powershell
+acousticbench demo
+```
+
+`t60-room-rule` maps Schroeder T60 through fixed bands: below 0.50 s is office, below 0.80 s is meeting, and every longer decay is lecture. Those cuts were taken from the gaps in the simulated design and were not fit to the ACE scores. The rule has no lobby class. `direct-path-distance` is evaluated only on the simulated set, because the ACE mean table has no distance in meters.
+
+The current write-up is [reports/draft-final-report.md](reports/draft-final-report.md). It is a team draft, not the submitted final report. `config/ace_dataset.yaml` remains a template for a manual manifest if the audio lives somewhere else.
 
 ## Add a dataset
 
@@ -181,4 +189,4 @@ AcoustiBench_Project_Reference.md
 
 ## Still open
 
-Dr. Bhattacharya still needs to approve the dataset list. The second baseline has to be a sponsor model, and that checkpoint is not in this repository. Distance estimation has a runner but no model. Sound-event detection, the final report, and the presentation are still open. Use [reports/schroeder-t60-pyroom-vs-ace.md](reports/schroeder-t60-pyroom-vs-ace.md) for the Schroeder development comparison. Do not present the synthetic example datasets as study results.
+Dr. Bhattacharya still needs to approve the dataset list. The sponsor simulator export and the two sponsor baseline models are not in this repository. Distance on a measured corpus needs a published meter label; ACE does not provide one. Sound-event detection is not implemented, because ACE has no event time labels. [reports/draft-final-report.md](reports/draft-final-report.md) is the working draft. The submitted final report and the presentation are still open. Do not present the synthetic example datasets as study results.

@@ -3,23 +3,19 @@
 - Team: Jonathankeith Murchison, Javon Whitfield, Jonathan Price
 - Advisor: Dr. Sambit Bhattacharya
 - Gap definition: gap = real - simulated
-- Simulated run: `f21c251978d8` / Pyroomacoustics Sabine development set / Schroeder T60 baseline
-- Real run: `eca44f8610c2` / ACE single-channel measured impulse responses / Schroeder T60 baseline
+- Simulated run: `db02965b308c` / Pyroomacoustics Sabine development set / Schroeder T60 baseline
+- Real run: `20230b6e643d` / ACE single-channel measured impulse responses / Schroeder T60 baseline
 
 For error and latency, a positive gap means the real run cost more.
-
-## Warnings
-
-- The simulated run evaluated 6 items. A gap from a very small set is unstable.
 
 ## Metrics
 
 | Metric | Simulated | Real | Gap (real - simulated) |
 | --- | ---: | ---: | ---: |
-| Mean absolute error | 0.0582 | 0.0623 | 0.0041 |
-| Root mean squared error | 0.0705 | 0.0875 | 0.0170 |
-| Median absolute error | 0.0574 | 0.0372 | -0.0202 |
-| Mean latency (ms) | 0.3421 | 0.5294 | 0.1873 |
+| Mean absolute error | 0.1185 | 0.0623 | -0.0562 |
+| Root mean squared error | 0.1571 | 0.0875 | -0.0696 |
+| Median absolute error | 0.1004 | 0.0372 | -0.0633 |
+| Mean latency (ms) | 0.4143 | 0.4869 | 0.0726 |
 
 ## By condition
 
@@ -29,9 +25,9 @@ Conditions are not paired across the two datasets. Each table is that run's own 
 
 | Condition | MAE | RMSE | Support |
 | --- | ---: | ---: | ---: |
-| lecture | 0.1050 | 0.1065 | 2 |
-| meeting | 0.0574 | 0.0585 | 2 |
-| office | 0.0122 | 0.0124 | 2 |
+| lecture | 0.2368 | 0.2509 | 12 |
+| meeting | 0.0971 | 0.1016 | 12 |
+| office | 0.0217 | 0.0281 | 12 |
 
 ### Real
 
@@ -50,7 +46,7 @@ Conditions are not paired across the two datasets. Each table is that run's own 
 - Model: Schroeder backward integration (`schroeder-t60`). This is a classical baseline, not a sponsor neural model.
 - Simulated reference: Sabine T60 from room volume, surface area, and absorption.
 - Real reference: ACE Challenge fullband T60 for cruciform channel 1.
-- Simulated notes: Development simulation. Reference T60 is Sabine from room absorption, not a measurement.
+- Simulated notes: Expanded shoebox set. Reference T60 is Sabine from room absorption, not a measurement. Not a sponsor-model result.
 - Real notes: ACE Challenge single-channel impulse responses. Reference is published fullband T60 for cruciform channel 1. Cite Eaton et al. 2016. Not a sponsor-model result.
 
 ## How to read this

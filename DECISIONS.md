@@ -54,10 +54,17 @@ The second baseline is still the sponsor's model. The proposal says the team wil
 
 Items 1 and 3 are not substitutes for each other. Pyroomacoustics is the runnable development simulator. The sponsor pipeline remains the research simulator.
 
+## Development baselines that do not need new sponsor files
+
+- Room family: `t60-room-rule`. Schroeder T60 below 0.50 s is office, below 0.80 s is meeting, and every longer decay is lecture. The cuts sit between the simulated design bands (office at or below 0.45 s, meeting from 0.55 s, lecture from 0.90 s). They were not fit to ACE. ACE adds a lobby class that the rule does not predict.
+- Distance: `direct-path-distance` on the simulated set only. The label is the Euclidean source-to-microphone distance. The estimate is the direct-path onset times 343 m/s. The ACE mean table has DRR, not meters.
+- `acousticbench demo` rewrites the comparison reports and `reports/draft-final-report.md` from completed runs.
+
 ## Still open
 
 - Advisor approval of this dataset list.
 - The sponsor's two baseline models, and a repeatable seed for those runs.
-- Distance estimation and sound-event detection implementations.
+- Distance on a measured corpus that publishes meters.
+- Sound-event detection. ACE does not provide event time labels.
 - Full DCASE sound-event metrics, Docker packaging, React, and GitHub Actions from the midterm software list.
-- The final report and presentation.
+- The submitted final report and presentation. The file in `reports/` is a draft.

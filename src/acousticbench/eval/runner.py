@@ -95,7 +95,7 @@ def _evaluate(store: Store, run: dict, project_root: Path) -> tuple[dict, Path]:
             prediction = model.predict(audio, target_rate)
             latency_ms = (time.perf_counter() - started) * 1000.0
             parsed = _parse_prediction(prediction, task)
-            true_target = _true_target(item) if task != "classification" else None
+            true_target = _true_target(item, task) if task != "classification" else None
         except Exception as exc:
             row["error"] = str(exc)
             rows.append(row)
@@ -144,7 +144,7 @@ def _evaluate(store: Store, run: dict, project_root: Path) -> tuple[dict, Path]:
             metrics["warnings"].append(score_note)
     info = model.get_info() if hasattr(model, "get_info") else {}
     metrics["model_info"] = info
-    metrics["provenance"] = collect_provenance(project_root)
+    metrics["provenance"] = _provenance(project_root, dataset, target_rate, max_seconds)
 
     destination = runs_dir(project_root) / run["id"]
     destination.mkdir(parents=True, exist_ok=True)
@@ -153,15 +153,41 @@ def _evaluate(store: Store, run: dict, project_root: Path) -> tuple[dict, Path]:
     return metrics, predictions_path
 
 
-def _true_target(item) -> float:
+def _true_target(item, task: str) -> float:
+    if task == "t60" and item.t60 is not None:
+        return float(item.t60)
+    if task == "distance" and item.distance is not None:
+        return float(item.distance)
     if item.target is not None:
         return float(item.target)
     try:
         return float(item.label)
     except (TypeError, ValueError) as exc:
         raise ValueError(
-            f"{item.relpath} has no numeric target. Add a t60 or target column to the manifest."
+            f"{item.relpath} has no numeric target. Add a t60, distance, or target column to the manifest."
         ) from exc
+
+
+def _provenance(project_root: Path, dataset: dict, sample_rate: int, max_seconds: object) -> dict:
+    metadata = dataset.get("metadata") or {}
+    dataset_info = {
+        "id": dataset.get("id"),
+        "simulator": metadata.get("simulator"),
+        "simulator_version": metadata.get("simulator_version"),
+        "image_order": metadata.get("image_order"),
+        "sample_rate_hz": metadata.get("sample_rate"),
+        "air_absorption": metadata.get("air_absorption"),
+        "t60_reference": metadata.get("t60_reference") or metadata.get("reference"),
+        "distance_reference": metadata.get("distance_reference"),
+        "t60_table": metadata.get("t60_table"),
+        "room_label": metadata.get("room_label"),
+    }
+    return {
+        **collect_provenance(project_root),
+        "sample_rate": sample_rate,
+        "max_seconds": None if max_seconds in (None, "") else float(max_seconds),
+        "dataset": {key: value for key, value in dataset_info.items() if value is not None},
+    }
 
 
 def _parse_prediction(prediction: Prediction, task: str = "classification") -> dict:

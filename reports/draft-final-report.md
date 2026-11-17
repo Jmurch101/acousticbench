@@ -1,0 +1,85 @@
+# AcoustiBench draft report
+
+This is a working draft for the team. It is not the submitted final report.
+Sponsor baseline models are not in this repository, and Dr. Bhattacharya has not approved the dataset list.
+
+- Team: Jonathankeith Murchison, Javon Whitfield, Jonathan Price
+- Advisor: Dr. Sambit Bhattacharya
+- T60 simulated run: `db02965b308c`
+- T60 real run: `20230b6e643d`
+- Room-type simulated run: `a3da8a7143c2`
+- Room-type real run: `341ce8b3b155`
+- Distance simulated run: `89c5cd6e2ab2`
+
+## T60
+
+The model is Schroeder backward integration (`schroeder-t60`). It is a classical baseline, not a sponsor neural model.
+The simulated reference is the Sabine T60 for each shoebox. The real reference is the ACE Challenge fullband T60 for cruciform channel 1.
+Rooms are not paired. The gap is the ACE aggregate minus the simulated aggregate.
+
+| Metric | Simulated | Real | Gap (real - simulated) |
+| --- | ---: | ---: | ---: |
+| Mean absolute error | 0.1185 | 0.0623 | -0.0562 |
+| Root mean squared error | 0.1571 | 0.0875 | -0.0696 |
+| Median absolute error | 0.1004 | 0.0372 | -0.0633 |
+| Mean latency (ms) | 0.4143 | 0.4869 | 0.0726 |
+
+## Room type
+
+The classifier is `t60-room-rule`. It estimates Schroeder T60 and applies fixed bands: below 0.50 s is office, below 0.80 s is meeting, and every longer decay is lecture.
+Those cuts sit in the gaps between the simulated design bands. They were not adjusted to the ACE scores. The rule has no lobby class. ACE lobby files are a fourth real label.
+
+- Warning: Label sets differ. Per-class gaps are reported only for labels present in both runs.
+
+| Metric | Simulated | Real | Gap (real - simulated) |
+| --- | ---: | ---: | ---: |
+| Accuracy | 0.8611 | 0.4286 | -0.4325 |
+| Macro F1 | 0.8585 | 0.2917 | -0.5669 |
+| Macro precision | 0.8796 | 0.2500 | -0.6296 |
+| Macro recall | 0.8611 | 0.3750 | -0.4861 |
+| Weighted F1 | 0.8585 | 0.3333 | -0.5252 |
+| Expected calibration error | n/a | n/a | n/a |
+| Mean latency (ms) | 0.3537 | 0.5039 | 0.1502 |
+
+Off-diagonal counts from the completed runs:
+- Simulated: 4 meeting file(s) predicted as lecture.
+- Simulated: 1 office file(s) predicted as meeting.
+- Real: 2 lecture file(s) predicted as meeting.
+- Real: 2 lobby file(s) predicted as lecture.
+- Real: 4 meeting file(s) predicted as office.
+
+## Distance
+
+Only the simulated set has a distance label. It is the straight-line distance between the source and the microphone.
+The estimator is `direct-path-distance`: the first sample at 5 percent of the peak, times 343 m/s.
+The ACE mean table publishes direct-to-reverberant ratio, not distance in meters, so this draft has no real-side distance run.
+
+- Items: 36
+- Mean absolute error: 0.6959 meters
+- Root mean squared error: 0.7009 meters
+- Median absolute error: 0.7021 meters
+
+## Provenance
+
+- AcoustiBench: 0.1.0
+- Python: 3.14.3
+- Git revision: 9c30c23f90c552f4f2cde1f1076a72b646d6d57c
+- Sample rate: 16000
+- Dataset id: pyroom-sabine-dev
+- Dataset simulator: pyroomacoustics
+- Dataset simulator_version: 0.10.1
+- Dataset image_order: 40
+- Dataset sample_rate_hz: 16000
+- Dataset air_absorption: False
+- Dataset t60_reference: sabine
+- Dataset distance_reference: euclidean source to microphone
+
+## Still open
+
+- Advisor approval of the dataset list.
+- The sponsor simulator export, and the two sponsor baseline models.
+- Source-to-microphone distance on a measured corpus that publishes distance in meters.
+- Sound-event detection. ACE does not provide event time labels.
+- The submitted final report and the presentation.
+
+Full tables are in `reports/schroeder-t60-pyroom-vs-ace.md`, `reports/t60-room-rule-pyroom-vs-ace.md`, and `reports/direct-path-distance-pyroom.md`.

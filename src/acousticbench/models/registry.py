@@ -13,6 +13,8 @@ import yaml
 from acousticbench.models.base import AcousticModel
 from acousticbench.models.constant import ConstantLabelModel
 from acousticbench.models.example_spectral import ExampleSpectralClassifier
+from acousticbench.models.direct_path_distance import DirectPathDistanceModel
+from acousticbench.models.room_rule import T60RoomRuleModel
 from acousticbench.models.schroeder_t60 import SchroederT60Model
 
 logger = logging.getLogger(__name__)
@@ -21,6 +23,8 @@ QUALIFIED_NAME = re.compile(r"^[A-Za-z_][\w.]*:[A-Za-z_]\w*$")
 
 BUILTINS: dict[str, type[AcousticModel]] = {
     SchroederT60Model.model_id: SchroederT60Model,
+    T60RoomRuleModel.model_id: T60RoomRuleModel,
+    DirectPathDistanceModel.model_id: DirectPathDistanceModel,
     ExampleSpectralClassifier.model_id: ExampleSpectralClassifier,
     ConstantLabelModel.model_id: ConstantLabelModel,
 }

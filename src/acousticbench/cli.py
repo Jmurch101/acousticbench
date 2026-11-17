@@ -54,6 +54,12 @@ def main(argv: list[str] | None = None) -> None:
     )
     prepare_ace.set_defaults(func=cmd_prepare_ace)
 
+    demo = sub.add_parser(
+        "demo",
+        help="Rerun Schroeder, the room-family rule, and direct-path distance, then write the draft report.",
+    )
+    demo.set_defaults(func=cmd_demo)
+
     datasets = sub.add_parser("datasets", help="List or register datasets.")
     datasets_sub = datasets.add_subparsers(dest="datasets_command", required=True)
     datasets_list = datasets_sub.add_parser("list", help="List registered datasets.")
@@ -142,6 +148,15 @@ def cmd_prepare_ace(args: argparse.Namespace) -> None:
     print("Registered the local ACE impulse responses. Audio stays outside git.")
     print(f"- {record['id']}: {record['domain']} -> {record['root_path']}")
     print("Cite Eaton, Gaubitch, Moore, and Naylor, IEEE/ACM TASLP, 2016.")
+
+
+def cmd_demo(args: argparse.Namespace) -> None:
+    from acousticbench.demo import run_recorded_demo
+
+    written = run_recorded_demo(_root(args), _store(_root(args)))
+    print("Wrote the development reports from completed runs.")
+    for path in written.values():
+        print(f"- {path}")
 
 
 def cmd_datasets_list(args: argparse.Namespace) -> None:

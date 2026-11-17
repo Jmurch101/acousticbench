@@ -143,11 +143,11 @@ No bibliography or specific papers for AcoustiBench were included in the supplie
 The proposal and midterm report name the required tasks, Pyroomacoustics, the ACE Challenge, and sponsor-supplied models. The working choices are recorded in DECISIONS.md.
 
 Selected for implementation:
-1. First task: T60 estimation. Room-size classification, distance estimation, and sound-event detection remain required.
+1. First task: T60 estimation, with a measured Pyroomacoustics versus ACE comparison. Room-family classification has a fixed T60 rule on those same files. Distance has a direct-path baseline on the simulated geometry only. Sound-event detection remains required and is not implemented.
 2. Simulator the team can run: Pyroomacoustics (MIT). SoundSpaces 2.0, Steam Audio, and UE5 MetaSounds stay with the sponsor.
-3. Real recordings: ACE Challenge corpus, CC BY-ND 4.0. Do not commit or modify-and-redistribute the audio.
-4. First model: Schroeder T60 baseline. The second model is still a sponsor baseline and is not in the repository.
-5. T60 metrics: mean absolute error and root mean squared error, including a by-condition breakdown when the manifest has a condition column.
+3. Real recordings: ACE Challenge corpus. Zenodo lists CC BY 4.0 and Imperial College states CC BY-ND 4.0. Follow the stricter rule. Do not commit or modify-and-redistribute the audio.
+4. First model: Schroeder T60 baseline. The room-family rule and the direct-path distance estimator are classical baselines in the same category. The sponsor baselines are not in the repository.
+5. T60 metrics: mean absolute error and root mean squared error, including a by-condition breakdown when the manifest has a condition column. Room family uses the classification metrics. Distance uses MAE and RMSE in meters.
 
 Still needs the advisor or sponsor:
 6. Approval of the three-dataset list.
@@ -168,6 +168,6 @@ When using an AI coding agent to implement AcoustiBench:
 15. Project status snapshot
 Known: project title, broad sim-to-real evaluation purpose, team name, team members, advisor, proposal submission date, proposal and midterm report guidelines, and an early milestone outline.
 
-Working selection, still needing sponsor approval for the dataset list and the second model: T60 estimation, Pyroomacoustics, the ACE corpus, and the Schroeder T60 baseline. See DECISIONS.md.
+Working selection, still needing sponsor approval for the dataset list and the sponsor models: T60 estimation, a fixed room-family rule, direct-path distance on the simulated geometry, Pyroomacoustics, the ACE corpus, and the Schroeder T60 baseline. See DECISIONS.md. `reports/draft-final-report.md` is a draft written from completed runs.
 
-Needs confirmation: sponsor dataset approval, sponsor baseline models, distance and sound-event implementations, Docker, React, GitHub Actions, member assignments, later milestone dates, and complete final-report requirements.
+Needs confirmation: sponsor dataset approval, sponsor baseline models, measured distance labels, sound-event detection, Docker, React, GitHub Actions, member assignments, later milestone dates, and complete final-report requirements.

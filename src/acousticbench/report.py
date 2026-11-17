@@ -160,8 +160,16 @@ def _metric_lines(summary: dict) -> list[str]:
                 f"- AcoustiBench: {provenance.get('acousticbench_version')}",
                 f"- Python: {provenance.get('python')}",
                 f"- Git revision: {provenance.get('git_revision') or 'unavailable'}",
+                f"- Sample rate: {provenance.get('sample_rate')}",
             ]
         )
+        dataset_info = provenance.get("dataset") or {}
+        for key, value in dataset_info.items():
+            lines.append(f"- Dataset {key}: {value}")
+        info = summary.get("model_info") or {}
+        for key in ("reference", "unit", "thresholds_s", "speed_of_sound_m_s", "onset_fraction"):
+            if key in info:
+                lines.append(f"- Model {key}: {info[key]}")
     lines.append("")
     return lines
 
@@ -341,6 +349,125 @@ def _markdownish_to_html(markdown: str) -> str:
     flush_list()
     flush_table()
     return "\n".join(html_lines)
+
+
+def draft_report_markdown(
+    *,
+    t60_comparison: dict,
+    t60_simulated: dict,
+    t60_real: dict,
+    room_comparison: dict,
+    room_simulated: dict,
+    room_real: dict,
+    distance_run: dict,
+) -> str:
+    """Working draft. Every score is copied from a completed run."""
+    distance_summary = distance_run.get("summary") or {}
+    provenance = (t60_simulated.get("summary") or {}).get("provenance") or {}
+    lines = [
+        f"# {PROJECT_NAME} draft report",
+        "",
+        "This is a working draft for the team. It is not the submitted final report.",
+        "Sponsor baseline models are not in this repository, and Dr. Bhattacharya has not approved the dataset list.",
+        "",
+        f"- Team: {', '.join(TEAM)}",
+        f"- Advisor: {ADVISOR}",
+        f"- T60 simulated run: `{t60_simulated['id']}`",
+        f"- T60 real run: `{t60_real['id']}`",
+        f"- Room-type simulated run: `{room_simulated['id']}`",
+        f"- Room-type real run: `{room_real['id']}`",
+        f"- Distance simulated run: `{distance_run['id']}`",
+        "",
+        "## T60",
+        "",
+        "The model is Schroeder backward integration (`schroeder-t60`). It is a classical baseline, not a sponsor neural model.",
+        "The simulated reference is the Sabine T60 for each shoebox. The real reference is the ACE Challenge fullband T60 for cruciform channel 1.",
+        "Rooms are not paired. The gap is the ACE aggregate minus the simulated aggregate.",
+        "",
+        *_comparison_metric_lines(t60_comparison),
+        "",
+        "## Room type",
+        "",
+        "The classifier is `t60-room-rule`. It estimates Schroeder T60 and applies fixed bands: below 0.50 s is office, below 0.80 s is meeting, and every longer decay is lecture.",
+        "Those cuts sit in the gaps between the simulated design bands. They were not adjusted to the ACE scores. The rule has no lobby class. ACE lobby files are a fourth real label.",
+        "",
+        *_comparison_metric_lines(room_comparison),
+        "",
+        "Off-diagonal counts from the completed runs:",
+        *_confusion_miss_lines("Simulated", room_simulated.get("summary") or {}),
+        *_confusion_miss_lines("Real", room_real.get("summary") or {}),
+        "",
+        "## Distance",
+        "",
+        "Only the simulated set has a distance label. It is the straight-line distance between the source and the microphone.",
+        "The estimator is `direct-path-distance`: the first sample at 5 percent of the peak, times 343 m/s.",
+        "The ACE mean table publishes direct-to-reverberant ratio, not distance in meters, so this draft has no real-side distance run.",
+        "",
+        f"- Items: {distance_summary.get('n_evaluated')}",
+        f"- Mean absolute error: {_num(distance_summary.get('mae'))} {distance_summary.get('unit') or 'meters'}",
+        f"- Root mean squared error: {_num(distance_summary.get('rmse'))} {distance_summary.get('unit') or 'meters'}",
+        f"- Median absolute error: {_num(distance_summary.get('median_ae'))} {distance_summary.get('unit') or 'meters'}",
+        "",
+        "## Provenance",
+        "",
+        f"- AcoustiBench: {provenance.get('acousticbench_version')}",
+        f"- Python: {provenance.get('python')}",
+        f"- Git revision: {provenance.get('git_revision') or 'unavailable'}",
+        f"- Sample rate: {provenance.get('sample_rate')}",
+    ]
+    for key, value in (provenance.get("dataset") or {}).items():
+        lines.append(f"- Dataset {key}: {value}")
+    lines.extend(
+        [
+            "",
+            "## Still open",
+            "",
+            "- Advisor approval of the dataset list.",
+            "- The sponsor simulator export, and the two sponsor baseline models.",
+            "- Source-to-microphone distance on a measured corpus that publishes distance in meters.",
+            "- Sound-event detection. ACE does not provide event time labels.",
+            "- The submitted final report and the presentation.",
+            "",
+            "Full tables are in `reports/schroeder-t60-pyroom-vs-ace.md`, `reports/t60-room-rule-pyroom-vs-ace.md`, and `reports/direct-path-distance-pyroom.md`.",
+            "",
+        ]
+    )
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _confusion_miss_lines(title: str, summary: dict) -> list[str]:
+    matrix = summary.get("confusion_matrix") or {}
+    labels = matrix.get("labels") or []
+    counts = matrix.get("counts") or []
+    lines = []
+    for row_index, true_label in enumerate(labels):
+        row = counts[row_index] if row_index < len(counts) else []
+        for col_index, predicted in enumerate(labels):
+            count = row[col_index] if col_index < len(row) else 0
+            if count and true_label != predicted:
+                lines.append(f"- {title}: {count} {true_label} file(s) predicted as {predicted}.")
+    if not lines:
+        lines.append(f"- {title}: no off-diagonal counts were stored.")
+    return lines
+
+
+def _comparison_metric_lines(comparison: dict) -> list[str]:
+    lines = []
+    for warning in comparison.get("warnings") or []:
+        lines.append(f"- Warning: {warning}")
+    if lines:
+        lines.append("")
+    lines.extend(
+        [
+            "| Metric | Simulated | Real | Gap (real - simulated) |",
+            "| --- | ---: | ---: | ---: |",
+        ]
+    )
+    for metric in comparison.get("metrics") or []:
+        lines.append(
+            f"| {metric['label']} | {_num(metric['simulated'])} | {_num(metric['real'])} | {_num(metric['gap'])} |"
+        )
+    return lines
 
 
 def _inline(text: str) -> str:

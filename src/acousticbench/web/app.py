@@ -71,7 +71,11 @@ def create_app(project_root: Path | None = None) -> FastAPI:
             "run_count": len(runs),
             "model_count": len(models),
             "example_caveat": EXAMPLE_CAVEAT,
-            "task": "T60 estimation is the first selected task. Classification is still available for room-size work.",
+            "task": (
+                "T60 uses the Schroeder baseline. Room family uses a fixed T60 rule. "
+                "Distance on the simulated set uses the direct-path delay. "
+                "Sound-event detection is not implemented"
+            ),
             "gap_definition": "gap = real - simulated",
         }
 
