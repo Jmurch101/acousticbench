@@ -6,6 +6,8 @@ from acousticbench.ace_prepare import room_family
 from acousticbench.audio import write_wav
 from acousticbench.datasets.manifest import load_items
 from acousticbench.models.direct_path_distance import SPEED_OF_SOUND_M_S, estimate_distance
+from acousticbench.models.noise_type import classify_noise
+from acousticbench.sim.noise_dev import _clip
 from acousticbench.models.room_rule import T60RoomRuleModel
 from acousticbench.models.schroeder_t60 import estimate_t60
 from acousticbench.report import draft_report_markdown
@@ -43,6 +45,12 @@ def test_manifest_keeps_t60_and_distance_separate(tmp_path: Path):
     assert item.distance == 1.25
 
 
+def test_noise_rule_matches_the_synthesized_classes():
+    rng = np.random.default_rng(7)
+    for label in ("ambient", "babble", "fan"):
+        assert classify_noise(_clip(label, rng), 16000) == label
+
+
 def test_room_family_collapses_ace_names():
     assert room_family("Office_2") == "office"
     assert room_family("Meeting_Room_1") == "meeting"
@@ -76,4 +84,4 @@ def test_draft_report_copies_run_ids_and_scores():
     )
     assert "run-sim" in text
     assert "0.1000" in text or "0.1" in text
-    assert "not the submitted final report" in text.lower()
+    assert "the team's" in text.lower()

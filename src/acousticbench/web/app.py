@@ -74,7 +74,9 @@ def create_app(project_root: Path | None = None) -> FastAPI:
             "task": (
                 "T60 uses the Schroeder baseline. Room family uses a fixed T60 rule. "
                 "Distance on the simulated set uses the direct-path delay. "
-                "Sound-event detection is not implemented"
+                "Sound type uses the ACE ambient, babble, and fan filenames. "
+                "OpenSLR 26 supplies a public simulated room-size set. "
+                "PANNs Cnn14_16k is a public pretrained checkpoint, not a sponsor model."
             ),
             "gap_definition": "gap = real - simulated",
         }

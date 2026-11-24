@@ -360,15 +360,17 @@ def draft_report_markdown(
     room_simulated: dict,
     room_real: dict,
     distance_run: dict,
+    noise_comparison: dict | None = None,
+    noise_simulated: dict | None = None,
+    noise_real: dict | None = None,
 ) -> str:
-    """Working draft. Every score is copied from a completed run."""
+    """Project report. Every score is copied from a completed run."""
     distance_summary = distance_run.get("summary") or {}
     provenance = (t60_simulated.get("summary") or {}).get("provenance") or {}
     lines = [
-        f"# {PROJECT_NAME} draft report",
+        f"# {PROJECT_NAME} project report",
         "",
-        "This is a working draft for the team. It is not the submitted final report.",
-        "Sponsor baseline models are not in this repository, and Dr. Bhattacharya has not approved the dataset list.",
+        "The sponsor did not provide simulator files or model checkpoints. The choices below are the team's, made so the four tasks could be finished. They are not a signature from Dr. Bhattacharya.",
         "",
         f"- Team: {', '.join(TEAM)}",
         f"- Advisor: {ADVISOR}",
@@ -377,6 +379,14 @@ def draft_report_markdown(
         f"- Room-type simulated run: `{room_simulated['id']}`",
         f"- Room-type real run: `{room_real['id']}`",
         f"- Distance simulated run: `{distance_run['id']}`",
+        "",
+        "## Team decisions",
+        "",
+        "- Datasets: Pyroomacoustics shoeboxes, ACE impulse responses, and the ACE ambient, babble, and fan clips. SoundSpaces, Steam Audio, and Unreal files were not delivered.",
+        "- Room classes: office, meeting, lecture, and lobby, taken from the ACE room names.",
+        "- Demonstration models: Schroeder T60 and the fixed room-family rule. Direct-path distance and the noise-type rule cover the other two tasks. No neural model was trained.",
+        "- Distance stays on the simulated rooms. ACE does not publish distance in meters.",
+        "- Sound type is clip-level. ACE does not publish event start and end times.",
         "",
         "## T60",
         "",
@@ -401,13 +411,14 @@ def draft_report_markdown(
         "",
         "Only the simulated set has a distance label. It is the straight-line distance between the source and the microphone.",
         "The estimator is `direct-path-distance`: the first sample at 5 percent of the peak, times 343 m/s.",
-        "The ACE mean table publishes direct-to-reverberant ratio, not distance in meters, so this draft has no real-side distance run.",
+        "The ACE mean table publishes direct-to-reverberant ratio, not distance in meters, so this report has no real-side distance run.",
         "",
         f"- Items: {distance_summary.get('n_evaluated')}",
         f"- Mean absolute error: {_num(distance_summary.get('mae'))} {distance_summary.get('unit') or 'meters'}",
         f"- Root mean squared error: {_num(distance_summary.get('rmse'))} {distance_summary.get('unit') or 'meters'}",
         f"- Median absolute error: {_num(distance_summary.get('median_ae'))} {distance_summary.get('unit') or 'meters'}",
         "",
+        *_noise_section(noise_comparison, noise_simulated, noise_real),
         "## Provenance",
         "",
         f"- AcoustiBench: {provenance.get('acousticbench_version')}",
@@ -420,19 +431,40 @@ def draft_report_markdown(
     lines.extend(
         [
             "",
-            "## Still open",
+            "## Still left for the team",
             "",
-            "- Advisor approval of the dataset list.",
-            "- The sponsor simulator export, and the two sponsor baseline models.",
-            "- Source-to-microphone distance on a measured corpus that publishes distance in meters.",
-            "- Sound-event detection. ACE does not provide event time labels.",
-            "- The submitted final report and the presentation.",
+            "- Turn this report in and give the presentation.",
+            "- If the sponsor later sends models or simulator files, register them through the same manifest and rerun `acousticbench demo`.",
             "",
-            "Full tables are in `reports/schroeder-t60-pyroom-vs-ace.md`, `reports/t60-room-rule-pyroom-vs-ace.md`, and `reports/direct-path-distance-pyroom.md`.",
+            "Full tables are in `reports/schroeder-t60-pyroom-vs-ace.md`, `reports/t60-room-rule-pyroom-vs-ace.md`, `reports/direct-path-distance-pyroom.md`, and `reports/noise-type-synth-vs-ace.md`.",
             "",
         ]
     )
     return "\n".join(lines).rstrip() + "\n"
+
+
+def _noise_section(
+    comparison: dict | None, simulated: dict | None, real: dict | None
+) -> list[str]:
+    if not comparison or not simulated or not real:
+        return []
+    return [
+        "## Sound type",
+        "",
+        "The clips are ambient, babble, or fan. The rule uses zero crossings and the share of energy below 300 Hz.",
+        "The cuts were inspected on the ACE files, so the ACE accuracy describes this corpus. It is not a separate test set.",
+        "The synthesized clips only check that the rule fires. ACE has no start and end times, so this is not timed event detection.",
+        "",
+        f"- Simulated run: `{simulated['id']}`",
+        f"- Real run: `{real['id']}`",
+        "",
+        *_comparison_metric_lines(comparison),
+        "",
+        "Off-diagonal counts from the completed runs:",
+        *_confusion_miss_lines("Simulated", simulated.get("summary") or {}),
+        *_confusion_miss_lines("Real", real.get("summary") or {}),
+        "",
+    ]
 
 
 def _confusion_miss_lines(title: str, summary: dict) -> list[str]:

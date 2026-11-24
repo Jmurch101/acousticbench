@@ -17,6 +17,7 @@ from acousticbench.eval.store import Store
 from acousticbench.service import add_dataset
 
 DATASET_ID = "ace-single-rir"
+NOISE_DATASET_ID = "ace-noise-types"
 MEAN_TABLE = "20150814T154139_Corpus_Mean_DRRs_and_T60s.csv"
 ARCHIVE_NAME = "ACE_Corpus_RIRN_Single.tbz2"
 NOISE_WORDS = ("ambient", "babble", "fan", "noise")
@@ -109,6 +110,80 @@ def prepare_ace_dataset(project_root: Path, store: Store) -> dict:
         },
         allow_example_flags=True,
     )
+
+
+def prepare_ace_noise_dataset(project_root: Path, store: Store) -> dict:
+    extracted = project_root / "data" / "ace" / "single"
+    wavs = [
+        path
+        for path in extracted.rglob("*")
+        if path.is_file() and path.suffix.lower() in AUDIO_EXTENSIONS and _noise_class(path.name)
+    ]
+    if not wavs:
+        raise ValueError(
+            "ACE noise files were not found. Run prepare-ace after the single-channel archive is extracted."
+        )
+    prepared = project_root / "data" / "ace" / "prepared-noise"
+    prepared.mkdir(parents=True, exist_ok=True)
+    manifest = prepared / "manifest.csv"
+    with manifest.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["path", "label", "condition", "split"])
+        writer.writeheader()
+        for path in sorted(wavs):
+            label = _noise_class(path.name)
+            folder = path.parent.parent.name if path.parent.parent else path.parent.name
+            writer.writerow(
+                {
+                    "path": path.resolve().as_posix(),
+                    "label": label,
+                    "condition": room_family(folder),
+                    "split": "corpus",
+                }
+            )
+    (prepared / "ACE_LICENSE.txt").write_text(
+        "ACE Challenge noise clips from the single-channel archive.\n"
+        "Labels are the filename classes ambient, babble, and fan. "
+        "The archive does not provide event start and end times.\n"
+        "Cite Eaton, Gaubitch, Moore, and Naylor, IEEE/ACM TASLP, 2016.\n"
+        "Do not commit the audio.\n",
+        encoding="utf-8",
+    )
+    return add_dataset(
+        store,
+        {
+            "id": NOISE_DATASET_ID,
+            "name": "ACE noise-type clips",
+            "domain": "real",
+            "layout": "csv",
+            "root_path": prepared,
+            "description": (
+                "ACE ambient, babble, and fan recordings from the single-channel archive. "
+                "The label is the class in the filename. These clips have no event times. "
+                "Cite Eaton et al. 2016. Audio is local only."
+            ),
+            "metadata": {
+                "source": "ACE Challenge",
+                "doi": "10.5281/zenodo.6257551",
+                "t60_table": "not used",
+                "room_label": "folder name collapsed to office, meeting, lecture, lobby",
+                "classes": "ambient, babble, fan",
+            },
+        },
+        allow_example_flags=True,
+    )
+
+
+def _noise_class(filename: str) -> str | None:
+    stem = Path(filename).stem.lower()
+    if "rir" in stem:
+        return None
+    if "babble" in stem:
+        return "babble"
+    if "ambient" in stem:
+        return "ambient"
+    if "fan" in stem:
+        return "fan"
+    return None
 
 
 def room_family(room_name: str) -> str:

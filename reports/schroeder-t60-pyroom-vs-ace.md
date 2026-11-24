@@ -3,8 +3,8 @@
 - Team: Jonathankeith Murchison, Javon Whitfield, Jonathan Price
 - Advisor: Dr. Sambit Bhattacharya
 - Gap definition: gap = real - simulated
-- Simulated run: `db02965b308c` / Pyroomacoustics Sabine development set / Schroeder T60 baseline
-- Real run: `20230b6e643d` / ACE single-channel measured impulse responses / Schroeder T60 baseline
+- Simulated run: `a343ba43a4b3` / Pyroomacoustics Sabine development set / Schroeder T60 baseline
+- Real run: `13f32650cd71` / ACE single-channel measured impulse responses / Schroeder T60 baseline
 
 For error and latency, a positive gap means the real run cost more.
 
@@ -15,7 +15,7 @@ For error and latency, a positive gap means the real run cost more.
 | Mean absolute error | 0.1185 | 0.0623 | -0.0562 |
 | Root mean squared error | 0.1571 | 0.0875 | -0.0696 |
 | Median absolute error | 0.1004 | 0.0372 | -0.0633 |
-| Mean latency (ms) | 0.4143 | 0.4869 | 0.0726 |
+| Mean latency (ms) | 0.4178 | 0.5402 | 0.1224 |
 
 ## By condition
 

@@ -3,8 +3,8 @@
 - Team: Jonathankeith Murchison, Javon Whitfield, Jonathan Price
 - Advisor: Dr. Sambit Bhattacharya
 - Gap definition: gap = real - simulated
-- Simulated run: `a3da8a7143c2` / Pyroomacoustics Sabine development set / T60 room-family rule
-- Real run: `341ce8b3b155` / ACE single-channel measured impulse responses / T60 room-family rule
+- Simulated run: `b3290320b3c0` / Pyroomacoustics Sabine development set / T60 room-family rule
+- Real run: `9a5ca60f3a1d` / ACE single-channel measured impulse responses / T60 room-family rule
 
 For accuracy and F1, a negative gap means the real run scored lower.
 For calibration error and latency, a positive gap means the real run cost more.
@@ -23,7 +23,7 @@ For calibration error and latency, a positive gap means the real run cost more.
 | Macro recall | 0.8611 | 0.3750 | -0.4861 |
 | Weighted F1 | 0.8585 | 0.3333 | -0.5252 |
 | Expected calibration error | n/a | n/a | n/a |
-| Mean latency (ms) | 0.3537 | 0.5039 | 0.1502 |
+| Mean latency (ms) | 0.3738 | 0.4836 | 0.1097 |
 
 ## Per-class F1
 

@@ -14,6 +14,8 @@ from acousticbench.models.base import AcousticModel
 from acousticbench.models.constant import ConstantLabelModel
 from acousticbench.models.example_spectral import ExampleSpectralClassifier
 from acousticbench.models.direct_path_distance import DirectPathDistanceModel
+from acousticbench.models.noise_type import NoiseTypeRule
+from acousticbench.models.panns_cnn14 import PannsNoiseType, PannsRoomSize
 from acousticbench.models.room_rule import T60RoomRuleModel
 from acousticbench.models.schroeder_t60 import SchroederT60Model
 
@@ -25,6 +27,9 @@ BUILTINS: dict[str, type[AcousticModel]] = {
     SchroederT60Model.model_id: SchroederT60Model,
     T60RoomRuleModel.model_id: T60RoomRuleModel,
     DirectPathDistanceModel.model_id: DirectPathDistanceModel,
+    NoiseTypeRule.model_id: NoiseTypeRule,
+    PannsNoiseType.model_id: PannsNoiseType,
+    PannsRoomSize.model_id: PannsRoomSize,
     ExampleSpectralClassifier.model_id: ExampleSpectralClassifier,
     ConstantLabelModel.model_id: ConstantLabelModel,
 }

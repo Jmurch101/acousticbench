@@ -18,5 +18,6 @@ data/*.db-*
 data/examples/
 data/ace/
 data/simulated/
+data/models/
 .DS_Store
 Thumbs.db

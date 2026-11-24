@@ -1,12 +1,12 @@
 # Working decisions
 
-These choices come from the Fall 2026 proposal and the October 9, 2026 midterm report. The team is using them so implementation can continue. Dr. Bhattacharya still needs to approve the dataset list and supply the second baseline model before those items meet the proposal's success criteria.
+These choices started from the Fall 2026 proposal and the October 9, 2026 midterm report. The sponsor did not provide simulator files or model checkpoints. The team made the remaining choices so the four tasks could be finished. Those choices are not a signature from Dr. Bhattacharya.
 
 ## First task
 
 **Reverberation-time estimation (T60), in seconds.**
 
-The proposal requires four tasks: room-size classification, T60 estimation, source-to-microphone distance estimation, and sound-event detection. T60 is the first one this harness completes. The proposal assigns it mean absolute error and root mean squared error. Room-size classification can still use the existing classification metrics. Distance uses the same regression runner when a distance model is registered. Sound-event detection is not implemented yet.
+The proposal requires four tasks: room-size classification, T60 estimation, source-to-microphone distance estimation, and sound-event detection. All four now have a measured baseline. T60 uses MAE and RMSE. Room family and sound type use the classification metrics. Distance uses MAE and RMSE in meters. Sound type is clip-level because ACE has no event times.
 
 ## Simulator
 
@@ -34,6 +34,8 @@ Cite Eaton et al., IEEE/ACM TASLP, 2016, when any ACE file is used. A manifest t
 | Material | License | What the team may do |
 | --- | --- | --- |
 | Pyroomacoustics | MIT | Use, modify, and run it. Keep the copyright notice with any copy of the software. |
+| OpenSLR 26 simulated room impulse responses | Apache 2.0 | Use the archive. Cite Ko, Peddinti, Povey, Seltzer, and Khudanpur, ICASSP 2017. Do not commit the audio. |
+| PANNs Cnn14_16k checkpoint | CC BY 4.0 weights; MIT inference code | Use the published weights. Cite Kong, Cao, Iqbal, Wang, Wang, and Plumbley, IEEE/ACM TASLP 2020. Do not commit the checkpoint. |
 | ACE corpus | Creative Commons Attribution-NoDerivatives 4.0 | Download and use the unmodified corpus for the project, with attribution. Do not distribute modified ACE audio. Do not commit the audio to GitHub. |
 | SoundSpaces 2.0 scene data, Steam Audio, Unreal Engine | Sponsor and vendor terms | Use only inside the sponsor environment after the advisor confirms the license. Do not commit those files. |
 | Schroeder T60 code in this repository | Project code | The implementation is the team's. The method is Schroeder, JASA, 1965. |
@@ -44,15 +46,18 @@ Cite Eaton et al., IEEE/ACM TASLP, 2016, when any ACE file is used. A manifest t
 
 It estimates T60 from an impulse response. It is a classical acoustic baseline so the harness can be tested before sponsor weights arrive. It is not a neural model, and it is not one of the two sponsor-provided baselines required for the final demonstration.
 
-The second baseline is still the sponsor's model. The proposal says the team will not train a new model as required work, and no sponsor checkpoint is in this repository.
+The sponsor checkpoints were not provided. The team did not train a neural model. The demonstration pair is Schroeder T60 and the room-family rule. Direct-path distance and the noise-type rule cover the other tasks.
 
-## Proposed dataset list
+A public checkpoint was added later: PANNs Cnn14 trained at 16 kHz (`panns-noise-type` and `panns-room-size`). The weights are Zenodo record 3987831, file `Cnn14_16k_mAP=0.438.pth`, 358,668,570 bytes, md5 `362fc5ff18f1d6ad2f6d464b45893f2c`. They stay in `data/models/` and are gitignored. The AudioSet tag names are mapped to the project labels with a fixed list. That list was not fit to ACE or to OpenSLR.
 
-1. Pyroomacoustics shoebox simulations, domain `simulated`, for development. `acousticbench simulate-dev` writes `data/simulated/pyroom-sabine-dev`. The `t60` column is the Sabine value for that room's absorption. It is not the Schroeder estimate of the same file.
-2. ACE Challenge measured impulse responses, domain `real`. `acousticbench prepare-ace` registers the local single-channel archive as `ace-single-rir`. The label is published fullband T60 for cruciform channel 1. The audio stays in `data/ace/` and is gitignored.
-3. Sponsor SoundSpaces 2.0, Steam Audio, or MetaSounds exports, connected through the same manifest when those files are provided.
+## Dataset list
 
-Items 1 and 3 are not substitutes for each other. Pyroomacoustics is the runnable development simulator. The sponsor pipeline remains the research simulator.
+SoundSpaces, Steam Audio, and Unreal were not delivered, so they are not in this list. The team is using these datasets.
+
+1. Pyroomacoustics shoebox simulations, domain `simulated`. `acousticbench simulate-dev` writes `data/simulated/pyroom-sabine-dev`. The `t60` column is the Sabine value. The `distance` column is the straight-line source-to-microphone distance. The room classes are office, meeting, and lecture.
+2. ACE Challenge impulse responses, domain `real`, dataset `ace-single-rir`. The T60 label is published fullband T60 for cruciform channel 1. The room classes are office, meeting, lecture, and lobby.
+3. ACE ambient, babble, and fan clips, domain `real`, dataset `ace-noise-types`. The label is the class in the filename. A synthesized check set, `synth-noise-types`, is the simulated side. The audio stays in `data/ace/` and is gitignored.
+4. OpenSLR 26 simulated room impulse responses, domain `simulated`, dataset `openslr-sim-rir`. `acousticbench prepare-openslr` extracts the first impulse response from rooms 1–12 in each size group (36 files). The label is small, medium, or large. The `t60` column is Sabine's formula from the published length, width, height, and absorption. The archive itself does not print T60. The zip stays in `data/simulated/downloads/` and is gitignored. This is not a SoundSpaces, Steam Audio, or Unreal export.
 
 ## Development baselines that do not need new sponsor files
 
@@ -60,11 +65,8 @@ Items 1 and 3 are not substitutes for each other. Pyroomacoustics is the runnabl
 - Distance: `direct-path-distance` on the simulated set only. The label is the Euclidean source-to-microphone distance. The estimate is the direct-path onset times 343 m/s. The ACE mean table has DRR, not meters.
 - `acousticbench demo` rewrites the comparison reports and `reports/draft-final-report.md` from completed runs.
 
-## Still open
+## Still left
 
-- Advisor approval of this dataset list.
-- The sponsor's two baseline models, and a repeatable seed for those runs.
-- Distance on a measured corpus that publishes meters.
-- Sound-event detection. ACE does not provide event time labels.
-- Full DCASE sound-event metrics, Docker packaging, React, and GitHub Actions from the midterm software list.
-- The submitted final report and presentation. The file in `reports/` is a draft.
+- Turn in `reports/final-report.md` and give the presentation.
+- If sponsor files arrive later, register them through the same manifest and rerun `acousticbench demo`.
+- Docker, React, and GitHub Actions were on the midterm software list. The team is not treating them as required to finish.

@@ -54,6 +54,12 @@ def main(argv: list[str] | None = None) -> None:
     )
     prepare_ace.set_defaults(func=cmd_prepare_ace)
 
+    prepare_openslr = sub.add_parser(
+        "prepare-openslr",
+        help="Register a small, medium, and large subset of the OpenSLR simulated impulse responses.",
+    )
+    prepare_openslr.set_defaults(func=cmd_prepare_openslr)
+
     demo = sub.add_parser(
         "demo",
         help="Rerun Schroeder, the room-family rule, and direct-path distance, then write the draft report.",
@@ -142,12 +148,27 @@ def cmd_simulate(args: argparse.Namespace) -> None:
 
 
 def cmd_prepare_ace(args: argparse.Namespace) -> None:
-    from acousticbench.ace_prepare import prepare_ace_dataset
+    from acousticbench.ace_prepare import prepare_ace_dataset, prepare_ace_noise_dataset
 
-    record = prepare_ace_dataset(_root(args), _store(_root(args)))
-    print("Registered the local ACE impulse responses. Audio stays outside git.")
+    root = _root(args)
+    store = _store(root)
+    record = prepare_ace_dataset(root, store)
+    noise = prepare_ace_noise_dataset(root, store)
+    print("Registered the local ACE impulse responses and noise clips. Audio stays outside git.")
     print(f"- {record['id']}: {record['domain']} -> {record['root_path']}")
+    print(f"- {noise['id']}: {noise['domain']} -> {noise['root_path']}")
     print("Cite Eaton, Gaubitch, Moore, and Naylor, IEEE/ACM TASLP, 2016.")
+
+
+def cmd_prepare_openslr(args: argparse.Namespace) -> None:
+    from acousticbench.sim.openslr import prepare_openslr_dataset
+
+    root = _root(args)
+    record = prepare_openslr_dataset(root, _store(root))
+    print("Registered OpenSLR simulated room impulse responses. Audio stays outside git.")
+    print(f"- {record['id']}: {record['domain']} -> {record['root_path']}")
+    print("Cite Ko, Peddinti, Povey, Seltzer, and Khudanpur, ICASSP 2017. License: Apache 2.0.")
+    print("The label is the archive size group. The archive does not publish a T60 for each file.")
 
 
 def cmd_demo(args: argparse.Namespace) -> None:

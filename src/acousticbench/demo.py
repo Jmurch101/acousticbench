@@ -8,15 +8,21 @@ from acousticbench.compare import compare_runs
 from acousticbench.eval.runner import execute_run
 from acousticbench.eval.store import Store
 from acousticbench.report import compare_report_markdown, draft_report_markdown, run_report_markdown
+from acousticbench.ace_prepare import prepare_ace_noise_dataset
 from acousticbench.service import queue_run
+from acousticbench.sim.noise_dev import generate_noise_dataset
 
 SIM_DATASET = "pyroom-sabine-dev"
 REAL_DATASET = "ace-single-rir"
+NOISE_SIM_DATASET = "synth-noise-types"
+NOISE_REAL_DATASET = "ace-noise-types"
 
 
 def run_recorded_demo(project_root: Path, store: Store) -> dict[str, str]:
     _require(store, SIM_DATASET)
     _require(store, REAL_DATASET)
+    generate_noise_dataset(project_root, store)
+    prepare_ace_noise_dataset(project_root, store)
     t60_sim = _evaluate(
         store,
         project_root,
@@ -61,6 +67,28 @@ def run_recorded_demo(project_root: Path, store: Store) -> dict[str, str]:
             "The rule has no lobby band and was not fit to these scores."
         ),
     )
+    noise_sim = _evaluate(
+        store,
+        project_root,
+        model_id="noise-type-rule",
+        dataset_id=NOISE_SIM_DATASET,
+        max_seconds=30,
+        notes=(
+            "Synthesized ambient, babble, and fan clips. The label is the class the generator created. "
+            "This checks the rule. It is not a room recording."
+        ),
+    )
+    noise_real = _evaluate(
+        store,
+        project_root,
+        model_id="noise-type-rule",
+        dataset_id=NOISE_REAL_DATASET,
+        max_seconds=30,
+        notes=(
+            "ACE ambient, babble, and fan clips. Labels come from the filenames. "
+            "The archive has no event start or end times. Cite Eaton et al. 2016."
+        ),
+    )
     distance = _evaluate(
         store,
         project_root,
@@ -74,13 +102,16 @@ def run_recorded_demo(project_root: Path, store: Store) -> dict[str, str]:
     )
     t60_comparison = compare_runs(t60_sim, t60_real)
     room_comparison = compare_runs(room_sim, room_real)
+    noise_comparison = compare_runs(noise_sim, noise_real)
     reports = project_root / "reports"
     reports.mkdir(parents=True, exist_ok=True)
     written = {
         "t60_comparison": reports / "schroeder-t60-pyroom-vs-ace.md",
         "room_comparison": reports / "t60-room-rule-pyroom-vs-ace.md",
         "distance": reports / "direct-path-distance-pyroom.md",
+        "noise_comparison": reports / "noise-type-synth-vs-ace.md",
         "draft": reports / "draft-final-report.md",
+        "final": reports / "final-report.md",
     }
     written["t60_comparison"].write_text(
         compare_report_markdown(t60_comparison, t60_sim, t60_real),
@@ -91,18 +122,24 @@ def run_recorded_demo(project_root: Path, store: Store) -> dict[str, str]:
         encoding="utf-8",
     )
     written["distance"].write_text(run_report_markdown(distance), encoding="utf-8")
-    written["draft"].write_text(
-        draft_report_markdown(
-            t60_comparison=t60_comparison,
-            t60_simulated=t60_sim,
-            t60_real=t60_real,
-            room_comparison=room_comparison,
-            room_simulated=room_sim,
-            room_real=room_real,
-            distance_run=distance,
-        ),
+    written["noise_comparison"].write_text(
+        compare_report_markdown(noise_comparison, noise_sim, noise_real),
         encoding="utf-8",
     )
+    report = draft_report_markdown(
+        t60_comparison=t60_comparison,
+        t60_simulated=t60_sim,
+        t60_real=t60_real,
+        room_comparison=room_comparison,
+        room_simulated=room_sim,
+        room_real=room_real,
+        distance_run=distance,
+        noise_comparison=noise_comparison,
+        noise_simulated=noise_sim,
+        noise_real=noise_real,
+    )
+    written["draft"].write_text(report, encoding="utf-8")
+    written["final"].write_text(report, encoding="utf-8")
     return {name: str(path) for name, path in written.items()}
 
 

@@ -18,8 +18,10 @@ The proposal asks for a repeatable way to measure how acoustic models change bet
 | Real recordings | ACE Challenge corpus | Selected. Audio stays local. Zenodo lists CC BY 4.0; Imperial College states CC BY-ND 4.0. Follow the stricter rule. |
 | First model | Schroeder T60 baseline (`schroeder-t60`) | Implemented. Not a sponsor neural model. |
 | Second model | Sponsor baseline | Not in this repository yet. |
+| Public simulator files | OpenSLR 26 simulated impulse responses | Registered as `openslr-sim-rir`. Apache 2.0. Not a sponsor export. |
+| Public checkpoint | PANNs Cnn14 at 16 kHz | CC BY 4.0 weights. Not trained by the team. |
 
-Room-size classification still runs with the earlier classification metrics. Distance estimation uses the same regression runner when a model provides a numeric prediction. Sound-event detection is still a required task and is not implemented.
+Room-size classification still runs with the earlier classification metrics. Distance estimation uses the same regression runner when a model provides a numeric prediction. Sound type is clip-level. ACE does not include timed event labels, so timed sound-event detection is not in this version.
 
 ## What this repository does today
 
@@ -166,7 +168,7 @@ Copy `examples/custom_model_template.py` to `user_models/my_model.py`. Implement
 
 Register it from the web page, from `config/models.yaml`, or by placing the module on the project import path. The qualified name looks like `user_models.my_model:MyModel`.
 
-The runner calls `load()` once, then `predict(audio, sample_rate)` with mono audio at the configured sample rate. Classification returns a label. T60 and distance return `Prediction.value` in seconds or meters. Sound-event detection is not implemented.
+The runner calls `load()` once, then `predict(audio, sample_rate)` with mono audio at the configured sample rate. Classification returns a label. T60 and distance return `Prediction.value` in seconds or meters. Timed sound-event detection is not implemented.
 
 ## What a report contains
 
@@ -185,8 +187,33 @@ DECISIONS.md            Working task, simulator, corpus, and model choices
 AcoustiBench_Project_Reference.md
 ```
 
-`data/ace/`, `data/simulated/`, `data/examples/`, `data/runs/`, and the SQLite database stay on the machine that ran the evaluation.
+`data/ace/`, `data/simulated/`, `data/models/`, `data/examples/`, `data/runs/`, and the SQLite database stay on the machine that ran the evaluation.
 
-## Still open
+## Public simulator files and a public checkpoint
 
-Dr. Bhattacharya still needs to approve the dataset list. The sponsor simulator export and the two sponsor baseline models are not in this repository. Distance on a measured corpus needs a published meter label; ACE does not provide one. Sound-event detection is not implemented, because ACE has no event time labels. [reports/draft-final-report.md](reports/draft-final-report.md) is the working draft. The submitted final report and the presentation are still open. Do not present the synthetic example datasets as study results.
+These are substitutes the team downloaded. They are not sponsor files.
+
+Download `sim_rir_16k.zip` from [OpenSLR 26](https://www.openslr.org/26/) into `data/simulated/downloads/`, then:
+
+```powershell
+acousticbench prepare-openslr
+```
+
+That keeps 36 impulse responses, 12 from each size group. The size label is the archive group. The T60 label is Sabine's formula on the published length, width, height, and absorption. Cite Ko, Peddinti, Povey, Seltzer, and Khudanpur, ICASSP 2017. The license is Apache 2.0.
+
+The neural weights are PANNs Cnn14 at 16 kHz, Zenodo record [3987831](https://zenodo.org/records/3987831), file `Cnn14_16k_mAP=0.438.pth`. Put that file in `data/models/`. The code that loads it needs PyTorch and `panns-inference`:
+
+```powershell
+python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+python -m pip install panns-inference
+acousticbench eval --model panns-noise-type --dataset ace-noise-types --sample-rate 16000 --max-seconds 30
+acousticbench eval --model panns-room-size --dataset openslr-sim-rir --sample-rate 16000 --max-seconds 30
+```
+
+`panns-noise-type` maps AudioSet speech-like tags to babble, fan and air conditioning to fan, and silence, room, or noise tags to ambient. `panns-room-size` uses the inside-small-room and inside-large-room tags. AudioSet has no medium-room tag. Neither map was fit to ACE or OpenSLR. Cite Kong, Cao, Iqbal, Wang, Wang, and Plumbley, IEEE/ACM TASLP 2020. The weights are CC BY 4.0. Do not commit the zip, the wav files, or the checkpoint.
+
+## Project report
+
+The sponsor did not provide simulator files or model checkpoints. The team finished the four tasks with the materials on hand. Those choices are recorded in [DECISIONS.md](DECISIONS.md). They are not an advisor signature.
+
+`acousticbench demo` rewrites [reports/final-report.md](reports/final-report.md) from completed runs. The submission write-up is [AcoustiBench_Final_Report.md](AcoustiBench_Final_Report.md). The slides are [AcoustiBench_Presentation.pptx](AcoustiBench_Presentation.pptx). Do not present the synthetic tone, noise, and chirp examples, or the synthesized noise clips, as study results.
